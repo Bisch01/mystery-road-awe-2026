@@ -48,7 +48,7 @@ export function findPersonById(id) {
 
     
     export function formatDate(ts){
-        if(!ts) return "Unknown Date"; //kein Zeitstempfel --> Unknown Date
+        if(!ts) return "Unknown date"; //kein Zeitstempfel --> Unknown Date
         const d = new Date(ts); //Zeitstempel aber unlesbar --> gibt Rohtext zurück
         if(isNaN(d.getTime())) return ts;
         return d.toLocaleDateString(undefined, {year: "numeric", month: "short", day: "numeric"}) + " " + d.toLocaleTimeString(undefined, {hour: "2-digit", minute: "2-digit"}); //Format: 1. Jan 2020 12:00, undefined = Browser default locale
