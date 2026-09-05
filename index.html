@@ -130,7 +130,7 @@
           </select>
 
           <label for="sortEvidence" class="visually-hidden">Sort evidence</label>
-          <select id="sortEvidence" onchange="handleSortChange()">
+          <select id="sortEvidence">
             <option value="date-desc">Newest first</option>
             <option value="date-asc">Oldest first</option>
             <option value="title-asc">Title (A&ndash;Z)</option>
@@ -156,10 +156,8 @@
     <section id="view-people" class="view">
       <h2>People &amp; Locations</h2>
       <div class="tab-bar">
-        <button type="button" id="tabPeopleBtn" class="tab-btn active"
-          onclick="switchPeopleTab('people')">People</button>
-        <button type="button" id="tabLocationsBtn" class="tab-btn"
-          onclick="switchPeopleTab('locations')">Locations</button>
+        <button type="button" id="tabPeopleBtn" class="tab-btn active">People</button>
+        <button type="button" id="tabLocationsBtn" class="tab-btn">Locations</button>
       </div>
       <div id="peoplePanel" class="people-grid"></div>
       <div id="locationsPanel" class="locations-grid hidden"></div>
@@ -254,7 +252,7 @@
           </div>
 
           <div class="form-actions">
-            <button type="button" class="btn btn-primary" onclick="saveHypothesis()">Save hypothesis draft</button>
+            <button type="button" id="saveHypothesisBtn" class="btn btn-primary">Save hypothesis draft</button>
             <span id="hypothesisSavedMsg" class="saved-msg hidden">Saved</span>
           </div>
         </form>

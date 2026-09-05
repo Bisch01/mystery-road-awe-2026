@@ -1,3 +1,8 @@
+// Von 7 Funktionen ist nur loadAllData exportiert. Die anderen bilden zusammen
+// einen Ablauf mit dem Countdown loadingStepsRemaining: könnte man einzelne
+// Teile von außen aufrufen, wäre der Zähler nicht mehr verlässlich.
+// Nach außen gibt es genau einen Einstiegspunkt.
+
 import {
     currentPage,
     allEvidence,
@@ -8,7 +13,7 @@ import {
     setFilteredEvidence,
     setAllTimeline,
 } from "./state.js";
-import{ renderDashboard } from "./views/dashboard.js";
+import { renderDashboard } from "./views/dashboard.js";
 import { renderEvidenceList, applyStoredBookmarkFlags } from "./views/evidence.js";
 import { renderTimeline } from "./views/timeline.js";
 import { populateAllDropdowns } from "./dropdowns.js";
@@ -45,9 +50,9 @@ function loadCorePeopleAndLocations() {
             return locationsRes.json().then(function (locationsJson) {
               setAllLocations(locationsJson);
 
-              hideLoadingStep();
-              renderDashboard();
-              populateAllDropdowns();
+              hideLoadingStep(); //Countdown 2 -> 1
+              renderDashboard(); //Bildschirm zeichnen
+              populateAllDropdowns(); //Dropdowns füllen
             });
           });
         });
@@ -96,7 +101,7 @@ function loadTimelineData() {
     });
 }
 
-//Einstieg: Overlay eiblenden, Zägler auf 2 und dann Kette starten
+//Einstieg: Overlay einblenden, Zähler auf 2 und dann Kette starten
 export function loadAllData() {
   showLoadingOverlay("Loading case file…");
   loadingStepsRemaining = 2;
