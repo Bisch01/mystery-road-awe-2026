@@ -46,7 +46,7 @@ export function findPersonById(id) {
         return ev.personIds.indexOf(person.id) !== -1 || ev.personIds.indexOf(person.name) !== -1;
     }
 
-    //
+    
     export function formatDate(ts){
         if(!ts) return "Unknown Date"; //kein Zeitstempfel --> Unknown Date
         const d = new Date(ts); //Zeitstempel aber unlesbar --> gibt Rohtext zurück
