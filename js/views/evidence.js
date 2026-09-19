@@ -28,7 +28,7 @@ import { saveBookmarksToStorage, saveNoteForEvidence, loadNoteForEvidence } from
 
 // nur diese View benutzt sie -> kein export
 let selectedEvidence = null;
-let evidenceViewLoading = true;
+let evidenceViewLoading = false;
 let latestSearchRequestId = 0;
 
 // --- Dropdowns ---
