@@ -449,3 +449,81 @@ sortiert wird, nicht ob es eine Kopie ist.
   Demo-3-Fix gar nicht auslösbar: bei leerer Liste gibt es nichts zu sortieren.
   Ich habe ihn gefunden, indem ich nach dem ersten Fix die Ansicht systematisch
   durchprobiert habe — also durch Benutzen, nicht durch Lesen.
+
+  ## Demo 4 — Bug: stiller Bug (nur Konsole)
+
+**Konsolen-Ausgabe (wörtlich):
+
+Uncaught TypeError: Cannot read properties of undefined (reading 'getAttribute')
+at main.js:29
+
+
+**Reproduktion:**
+1. DevTools öffnen (F12), Tab "Konsole", **bevor** irgendetwas angeklickt wird
+2. Seite neu laden
+3. Auf einen beliebigen Navigationsknopf klicken
+→ Oberfläche: völlig korrekt — die Ansicht wechselt, der Knopf wird markiert,
+  die Inhalte erscheinen.
+→ Konsole: ein TypeError pro Klick. Außerdem fehlt die erwartete Zeile
+  `nav clicked: <view>`.
+
+**Verantwortliche Zeilen:** `js/main.js`, in `setupEventListeners`:
+
+```js
+var navButtons = document.querySelectorAll(".nav-btn");
+for (var i = 0; i < navButtons.length; i++) {
+  navButtons[i].addEventListener("click", function () {
+    var targetView = navButtons[i].getAttribute("data-view");
+    console.log("nav clicked:", targetView);
+  });
+}
+```
+
+**Root Cause:** `var i` ist function-scoped — es existiert **ein einziges `i`**
+für die gesamte Funktion, nicht eines pro Schleifendurchlauf. Die fünf Callbacks
+werden registriert, aber erst beim Klick ausgeführt; sie merken sich keinen Wert,
+sondern greifen auf dieselbe Variable zu. Nach Ende der Schleife steht `i` auf 5
+(die Bedingung `5 < 5` hat sie beendet). Beim Klick liest der Callback also
+`navButtons[5]` — gültig sind nur 0 bis 4 — und erhält `undefined`.
+`undefined.getAttribute(...)` wirft.
+
+**Warum nichts sichtbar kaputtgeht:** Dieser Listener hat keine Aufgabe außer dem
+Logging. Die eigentliche Navigation läuft über die `data-navigate`-Attribute und
+den URL-Hash, in einem separaten Listener. Der Fehler unterbricht nur den
+Log-Callback, nicht die Navigation.
+
+**Fix:** `var` → `let` in der Schleife (und `const` für `navButtons`). `let` ist
+block-scoped: jeder Durchlauf erzeugt eine eigene Bindung, die der jeweilige
+Callback festhält.
+
+**Verifiziert:** Konsole geöffnet, Seite neu geladen, alle fünf Reiter angeklickt.
+Vorher: fünf TypeErrors, keine Log-Zeile. Nachher: kein Fehler, und pro Klick die
+korrekte Zeile `nav clicked: dashboard`, `nav clicked: evidence` usw. Dass jetzt
+der *richtige* Name erscheint, beweist zusätzlich, dass der Callback nun auf den
+angeklickten Button zugreift und nicht auf `undefined`.
+
+**Anmerkung:** Diese Stelle war seit dem Modul-Split (Demo 1) bewusst mit einem
+Kommentar als "nicht anfassen" markiert — überall sonst wurde `var` bereits zu
+`let`/`const`, nur hier hätte das den Bug versehentlich mitbehoben. Der Kommentar
+wurde mit diesem Fix entfernt.
+
+**Commits:** `da6edbf` (kaputt) → `<hash-fixed>` (heil)
+
+### Fragen
+
+- **Wie ist mir der Bug aufgefallen, obwohl nichts kaputt aussah?**
+  Nur weil die Konsole während des gesamten Testens offen war. Beim Klicken durch
+  die Reiter tauchte bei jedem Klick eine rote Zeile auf, während die Oberfläche
+  sich völlig normal verhielt.
+
+  "Sieht nicht kaputt aus" ist nicht dasselbe wie "ist nicht kaputt", weil die
+  sichtbare Oberfläche nur einen Teil dessen zeigt, was der Code tut. Hier war
+  eine Funktion seit dem ersten Klick defekt, ohne jede Auswirkung auf die
+  Darstellung — schlicht, weil ihr einziger Zweck das Logging war. Wäre in
+  demselben Callback später eine echte Aufgabe ergänzt worden (Statistik,
+  Zustandswechsel, ein Analytics-Aufruf), hätte sie von Anfang an nicht
+  funktioniert, und die Ursache wäre weit weg von der neuen Zeile gelegen.
+
+  Dazu kommt: der Fehler betrifft nur einen von zwei Listenern auf denselben
+  Buttons. Ein kaputter Listener neben einem funktionierenden ist von außen
+  grundsätzlich nicht unterscheidbar von "alles in Ordnung".
