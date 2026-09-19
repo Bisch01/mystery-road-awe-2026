@@ -31,12 +31,15 @@ function setupEventListeners() {
     });
   }
 
-  // --- ersetzt die früheren inline onclick/onchange Attribute ---
-  // Inline-Attribute werden im globalen Scope ausgewertet; Modul-Funktionen
-  // sind nicht global und würden dort einen ReferenceError auslösen.
   document.querySelectorAll("[data-navigate]").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      navigateTo(btn.getAttribute("data-navigate"));
+      const target = btn.getAttribute("data-navigate");
+      if (window.location.hash.replace("#", "") === target) {
+        // gleicher Hash -> der Browser feuert kein hashchange, also selbst rendern
+        handleHashChange();
+      } else {
+        navigateTo(target);
+      }
     });
   });
 
@@ -82,8 +85,10 @@ function initApp() {
 
   loadAllData().then(function () {
     handleHashChange();
-    var firstNote = loadNoteAsync("E01");
-    console.log("First note preview:", firstNote);
+
+    loadNoteAsync("E01").then(function (firstNote) {
+      console.log("First note preview:", firstNote);
+    });
   });
 }
 

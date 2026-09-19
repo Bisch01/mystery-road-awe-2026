@@ -527,3 +527,241 @@ wurde mit diesem Fix entfernt.
   Dazu kommt: der Fehler betrifft nur einen von zwei Listenern auf denselben
   Buttons. Ein kaputter Listener neben einem funktionierenden ist von außen
   grundsätzlich nicht unterscheidbar von "alles in Ordnung".
+
+  ## Demo 5 — Vollständiger Durchgang & Reflexion
+
+Systematisch durchgetestet: Dashboard-Statistiken · Evidence Suche/Filter/
+Sortierung/Bookmark/Detail/Notizen · People- und Locations-Tabs samt
+Querverweisen · Timeline mit Sortierung, Filtern und Evidence-Links · Workspace
+(Bookmarks, Notizen, Hypothesen-Formular, Reload-Persistenz).
+
+Zusätzlich abseits des normalen Gebrauchs: Reload zu verschiedenen Zeitpunkten
+und in verschiedenen Ansichten, Netzwerkdrosselung (Regular 3G / GPRS),
+einzelne Anfragen im Netzwerk-Tab blockiert, localStorage im Web-Speicher von
+Hand verändert und mit ungültigem JSON überschrieben, Klick auf den bereits
+aktiven Reiter, leere Eingaben.
+
+Bereits in Demo 2, 3 und 4 behandelt und hier nicht wiederholt: wirkungslose
+Sortierung, dauerhaft leere Evidence-Liste, TypeError bei Nav-Klicks.
+
+### Bug 5.1 — Timeline zeigt "[object Object]" statt des Ortsnamens
+
+**Reproduktion:** Reiter "Timeline" öffnen, auf die graue Meta-Zeile unter der
+Ereignisbeschreibung schauen.
+**Erwartet:** `Location: L01 - Human-Robot Interaction Laboratory`
+**Tatsächlich:** `Location: [object Object]`
+
+**Root Cause:** `js/views/timeline.js`, in `renderTimeline`:
+`eventLocationNames.push(evtLoc || item.locationIds[el])`. `findLocationById`
+liefert das vollständige Ort-Objekt; beim Zusammensetzen des HTML wird es
+implizit in einen String umgewandelt, was bei einem einfachen Objekt
+`[object Object]` ergibt. Das `||` war als Fallback gedacht, aber sein erster
+Zweig ist kein darstellbarer Wert. `renderEvidenceDetail` macht es richtig
+(`loc.id + " - " + loc.name`) — die App enthält beide Varianten nebeneinander.
+
+**Fix:** `eventLocationNames.push(evtLoc ? evtLoc.id + " - " + evtLoc.name : item.locationIds[el])`
+
+**Warum kein Konsolenfehler:** `[object Object]` ist das korrekte Ergebnis der
+Standard-String-Umwandlung, kein Fehler. Nur durch Hinschauen zu finden — das
+Gegenstück zu Demo 4, wo die Oberfläche fehlerfrei aussah.
+
+**Verifiziert:** Alle Ereignisse mit Ort zeigen lesbare Namen; Ereignisse ohne
+Ort zeigen weiterhin keine Location-Zeile.
+
+### Bug 5.2 — Workspace zeigt nach einem Reload keine Bookmarks und Notizen
+
+**Reproduktion (DevTools → Netzwerkanalyse → "Regular 3G"):**
+1. Evidence-Reiter, ein Beweisstück mit dem Stern markieren
+2. Auf Workspace wechseln → der Eintrag steht unter "Bookmarked Evidence"
+3. F5, während Workspace aktiv ist
+4. → "No bookmarked evidence yet", obwohl der Web-Speicher `["E14"]` enthält
+5. Erneut auf "Workspace" klicken → keine Wirkung
+6. Auf Evidence wechseln (Stern ist gefüllt) und zurück → erst jetzt erscheint er
+
+**Root Cause — zwei Ursachen zusammen:**
+
+(a) Beim Reload mit `#workspace` läuft `handleHashChange`, sobald `loadAllData()`
+aufgelöst ist. `loadAllData` wartet aber nur auf `case.json`, `people.json` und
+`locations.json`; `evidence.json` lädt parallel. `renderBookmarksList` filtert
+also über ein leeres `allEvidence`. Wenn die Daten eintreffen, zeichnet
+`loadEvidenceData` Dashboard, Evidence-Liste und Dropdowns nach — den Workspace
+nicht.
+
+(b) `navigateTo` setzt nur `window.location.hash`. Ist der Hash bereits der
+Zielwert, feuert der Browser kein `hashchange`-Ereignis. Da das Neuzeichnen
+ausschließlich daran hängt, bleibt ein Klick auf den aktiven Reiter wirkungslos —
+man kommt aus dem leeren Zustand nicht heraus.
+
+**Fix:**
+1. `js/api.js`: in `loadEvidenceData` zusätzlich
+   `if (currentPage === "workspace") renderWorkspace();`, analog zu den bereits
+   vorhandenen Nachzeichnungen für Evidence und Timeline
+2. `js/main.js`: der `data-navigate`-Listener prüft, ob der Hash schon auf dem
+   Ziel steht, und ruft in dem Fall `handleHashChange()` direkt auf
+
+**Verifiziert:** Mit Drosselung erscheinen Bookmarks und Notizen nach dem Reload,
+sobald der Ladebildschirm verschwindet. Klick auf den aktiven Reiter zeichnet neu.
+
+**Warum ohne Drosselung schwer zu finden:** Lokal sind alle JSON-Dateien in
+Millisekunden da, und je nach Reihenfolge tritt der Fehler auf oder nicht. In
+meinen Tests mal so, mal so — reproduzierbar erst durch die Netzwerkdrosselung.
+Genau die Art Fehler, die in Produktion bei langsamen Verbindungen jeden trifft
+und auf localhost nie auffällt.
+
+### Bug 5.3 — Ladebildschirm verschwindet, bevor die Beweisstücke geladen sind
+
+**Reproduktion:** DevTools → Netzwerkanalyse → "Cache deaktivieren" und
+"Regular 3G" → Strg+Shift+R → auf die Dashboard-Kachel "Evidence items" schauen.
+Der Ladebildschirm verschwindet, während dort noch **0** steht; erst danach
+springt die Zahl auf 18. "Review progress" zeigt kurz 0 %.
+
+Deterministische Variante: Im Netzwerk-Tab Rechtsklick auf `evidence.json` →
+"URL blockieren" → neu laden. Der Ladebildschirm verschwindet trotzdem, das
+Dashboard bleibt dauerhaft bei 0, die Evidence-Liste leer.
+
+**Root Cause:** `js/api.js` zählt mit `loadingStepsRemaining` herunter; bei 0
+wird der Ladebildschirm ausgeblendet. Der Zähler stand auf **2**, es gibt aber
+**drei** Ladevorgänge:
+
+| Ladevorgang | meldet sich ab? |
+|---|---|
+| `loadCorePeopleAndLocations` | ja, im innersten `.then()` |
+| `loadTimelineData` | ja, im `.finally()` |
+| `loadEvidenceData` | **nein** |
+
+Der Zähler wurde passend zu den zwei vorhandenen Aufrufen gesetzt, statt den
+fehlenden dritten zu ergänzen. Der Ladebildschirm meldet damit "fertig", während
+ein Drittel der Daten noch unterwegs ist.
+
+**Fix:** `loadingStepsRemaining` an beiden Stellen auf 3, und `loadEvidenceData`
+bekommt ein `.finally(function () { hideLoadingStep(); })` — wie
+`loadTimelineData` es bereits hat.
+
+**Warum `.finally` und nicht `.then`:** Scheitert das Laden, muss der
+Ladebildschirm trotzdem verschwinden, sonst friert die App darin ein. Ein `.then`
+hätte einen Bug durch einen schlimmeren ersetzt.
+
+**Verifiziert:** (1) Mit Drosselung bleibt der Ladebildschirm, bis das Dashboard
+beim ersten Erscheinen 18 zeigt. (2) Mit blockiertem `evidence.json` verschwindet
+er trotzdem, die Fehlermeldung aus dem `catch` erscheint, die App bleibt bedienbar.
+
+### Bug 5.4 — Konsole gibt ein Promise statt des Notiztextes aus
+
+**Reproduktion:** Konsole öffnen, Seite neu laden.
+**Erwartet:** `First note preview:` gefolgt vom Notiztext für E01
+**Tatsächlich:** `First note preview: Promise { <state>: "fulfilled", <value>: "" }`
+
+Verschärfte Variante: Für E01 eine Notiz speichern und neu laden — die Notiz
+steht im Web-Speicher, die Konsole zeigt trotzdem das Promise-Objekt.
+
+**Root Cause:** `loadNoteAsync` in `js/storage.js` gibt ein Promise zurück. In
+`js/main.js` wurde der Rückgabewert direkt geloggt:
+
+```js
+const firstNote = loadNoteAsync("E01");
+console.log("First note preview:", firstNote);
+```
+
+Damit wird die Quittung ausgegeben, nicht der Wert. Derselbe Fehlertyp wie in
+Demo 3: etwas, das an einem Promise hängt, wird behandelt, als wäre es bereits
+fertige Daten.
+
+**Fix:** `loadNoteAsync("E01").then(function (firstNote) { console.log(...); });`
+
+**Verifiziert:** Konsole zeigt `First note preview: <empty string>` bzw. den
+gespeicherten Notiztext. Kein `Promise {...}` mehr.
+
+**Anmerkung:** Dieser Bug war der zweite Kandidat für Demo 4 — kein sichtbarer
+Effekt, nur eine falsche Konsolenausgabe. Gewählt wurde dort der `var i`-Bug,
+weil er ein echter Laufzeitfehler ist.
+
+### Bug 5.5 — Kaputte Notizen im localStorage verhindern den Start (nicht behoben)
+
+**Reproduktion:** Web-Speicher → `remotion_notes` → Wert durch `kaputt` ersetzen
+→ neu laden. Die App startet nicht mehr, in der Konsole steht ein
+`SyntaxError` aus `JSON.parse`. Dieselbe Manipulation an `remotion_bookmarks`
+hat **keine** Folgen — die App startet mit leerer Bookmark-Liste.
+
+**Root Cause:** `loadBookmarksFromStorage` in `js/storage.js` hat `try/catch` und
+zusätzlich `Array.isArray`; `loadNotesFromStorage` direkt darunter hat beides
+nicht und ruft `JSON.parse(raw)` ungeschützt auf. Zwei Funktionen mit demselben
+Zweck, unterschiedlich sorgfältig geschrieben.
+
+**Bewusst nicht behoben**, weil Demo 7 genau diese Manipulation als
+Live-Vorführung verlangt ("Replace a value with text that isn't valid JSON and
+see what happens"). Der Fix wäre derselbe `try/catch`-Block wie bei den Bookmarks.
+
+### Bug 5.6 — Kein `res.ok`-Check vor `res.json()` (nicht behoben)
+
+**Reproduktion:** Netzwerk-Tab → Rechtsklick auf `timeline.json` → "URL
+blockieren" → neu laden. Der Fehler landet im `catch`, aber nur als
+`console.log`, ohne Hinweis für den Benutzer; die Timeline bleibt kommentarlos
+leer. Bei einem echten 404 (Datei umbenannt) würde `res.json()` die HTML-
+Fehlerseite zu parsen versuchen.
+
+**Root Cause:** Alle drei Ladefunktionen rufen `res.json()` auf, ohne vorher
+`res.ok` zu prüfen. `fetch` wirft bei einem HTTP-Fehlerstatus nicht — ein 404
+ist für `fetch` eine erfolgreich beantwortete Anfrage. Der Fehler entsteht erst
+beim Parsen, mit einer irreführenden Meldung.
+
+Zusätzlich behandeln die drei `catch`-Blöcke denselben Fall unterschiedlich:
+`console.error` plus `alert` bei Evidence, nur `console.log` bei der Timeline,
+und in `loadCorePeopleAndLocations` gibt es gar keinen `catch`.
+
+**Bewusst nicht behoben** — Demo 7 fragt nach dem *aktuellen* Verhalten bei einem
+404. Der Fix wäre
+`if (!res.ok) throw new Error("HTTP " + res.status)` vor jedem `res.json()`
+sowie eine einheitliche Fehlerbehandlung.
+
+### Für die Live-Präsentation gewählt
+
+**Bug 5.1** (Timeline `[object Object]`). Symptom in zwei Sekunden sichtbar,
+Ursache in einem Satz erklärbar, Fix eine Zeile.
+
+Vorführung:
+```bash
+git checkout demo-4-done    # Zustand vor dem Fix
+# Timeline öffnen -> "Location: [object Object]"
+git checkout main
+# Timeline öffnen -> "Location: L01 - Human-Robot Interaction Laboratory"
+git diff demo-4-done main -- js/views/timeline.js
+```
+
+## Fragen zu Demo 5
+
+### Live-Walkthrough des gewählten Bugs
+
+Siehe Bug 5.1. Auslösender Zustand: keiner — der Fehler tritt bei jedem Öffnen
+der Timeline auf, für jedes Ereignis mit hinterlegtem Ort. Keine besondere
+Vorgeschichte, kein Timing, keine gespeicherten Daten nötig.
+
+### Hat das Beheben eines Bugs einen anderen verändert, aufgedeckt oder
+### versehentlich mitbehoben?
+
+**Ja, zweimal, und beide Male aufdeckend statt behebend.**
+
+*Fall 1 — Demo 3 deckte Demo 2 auf.* Solange `evidenceViewLoading` nie
+zurückgesetzt wurde, verließ `renderEvidenceList` die Funktion sofort mit
+`return`; die Evidence-Ansicht blieb leer. Dadurch war der Sortier-Bug nicht
+auslösbar — bei null Karten gibt es keine Reihenfolge zu beobachten. Erst nach
+dem Demo-3-Fix erschienen die 18 Karten, und beim Durchprobieren der
+Sortier-Optionen zeigte sich, dass keine von ihnen etwas bewirkt. Der zweite
+Bug lag also nicht im selben Code, sondern war schlicht hinter dem ersten
+*versteckt*.
+
+*Fall 2 — Demo 3 deckte 5.2 und 5.3 auf.* Beide betreffen die Reihenfolge, in
+der Daten ankommen und Ansichten gezeichnet werden. Solange die Evidence-Ansicht
+generell leer war, fiel nicht auf, dass sie manchmal *zu spät* gefüllt wird.
+
+**Beinahe-Fall, bewusst vermieden:** Beim Modul-Split in Demo 1 wurde `var`
+weitgehend durch `let`/`const` ersetzt. Die Schleife in `setupEventListeners`
+blieb absichtlich unverändert und mit einem Kommentar markiert, weil `let` dort
+den Demo-4-Bug stillschweigend mitbehoben hätte. Ein Refactoring hätte also fast
+einen Bug beseitigt, ohne dass jemand ihn je gesehen oder verstanden hätte.
+
+**Wie ich die Isolation der übrigen Fixes bestätigt habe:** Jeder Fix bekam einen
+eigenen Commit, und nach jedem wurde die vollständige Testrunde erneut
+durchlaufen (alle fünf Ansichten, Konsole offen, einmal mit Drosselung).
+Vergleichsgrößen dabei: 18 Karten, Dashboard-Zahlen 18/6/6, Konsole ohne Fehler,
+Bookmarks und Notizen überstehen den Reload. So war nach jedem Schritt belegt,
+dass die bereits behobenen Bugs behoben blieben und keine neuen dazukamen.

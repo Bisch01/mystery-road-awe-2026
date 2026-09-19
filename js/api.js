@@ -17,8 +17,9 @@ import { renderDashboard } from "./views/dashboard.js";
 import { renderTimeline } from "./views/timeline.js";
 import { populateAllDropdowns } from "./dropdowns.js";
 import { renderEvidenceList, applyStoredBookmarkFlags, setEvidenceViewLoading } from "./views/evidence.js";
+import { renderWorkspace } from "./views/workspace.js";
 
-let loadingStepsRemaining = 2;
+let loadingStepsRemaining = 3;
 
 function showLoadingOverlay(msg){
     const overlay = document.getElementById("loadingOverlay");
@@ -75,11 +76,15 @@ function loadEvidenceData() {
       renderDashboard();
       populateAllDropdowns();
       if (currentPage === "evidence") renderEvidenceList();
+      if (currentPage === "workspace") renderWorkspace();
     })
     .catch(function (err) {
-      setEvidenceViewLoading(false); // Meldung an evidence.js, dass die Beweise geladen sind (auch wenn es fehlschlägt)
+      setEvidenceViewLoading(false);
       console.error("Failed to load evidence.json", err);
       alert("Evidence could not be loaded. Some views may be incomplete.");
+    })
+    .finally(function () {
+      hideLoadingStep();
     });
 }
 
@@ -103,10 +108,10 @@ function loadTimelineData() {
     });
 }
 
-//Einstieg: Overlay einblenden, Zähler auf 2 und dann Kette starten
+//Einstieg: Overlay einblenden, Zähler auf 3 und dann Kette starten
 export function loadAllData() {
   showLoadingOverlay("Loading case file…");
-  loadingStepsRemaining = 2;
+  loadingStepsRemaining = 3;
   return loadCorePeopleAndLocations().then(function () {
     loadEvidenceData();
     loadTimelineData();

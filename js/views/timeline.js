@@ -70,7 +70,8 @@ export function renderTimeline() {
     const eventLocationNames = [];
     for (let el = 0; el < item.locationIds.length; el++) {
       const evtLoc = findLocationById(item.locationIds[el]);
-      eventLocationNames.push(evtLoc || item.locationIds[el]);
+      // evtLoc ist ein Objekt -> in den String muss der lesbare Teil, nicht das Objekt
+      eventLocationNames.push(evtLoc ? evtLoc.id + " - " + evtLoc.name : item.locationIds[el]);
     }
     if (eventLocationNames.length > 0) {
       html += '<p class="evidence-meta">Location: ' + eventLocationNames.join(", ") + "</p>";
