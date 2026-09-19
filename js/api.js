@@ -17,6 +17,7 @@ import { renderDashboard } from "./views/dashboard.js";
 import { renderEvidenceList, applyStoredBookmarkFlags } from "./views/evidence.js";
 import { renderTimeline } from "./views/timeline.js";
 import { populateAllDropdowns } from "./dropdowns.js";
+import { renderEvidenceList, applyStoredBookmarkFlags, setEvidenceViewLoading } from "./views/evidence.js";
 
 let loadingStepsRemaining = 2;
 
@@ -69,6 +70,7 @@ function loadEvidenceData() {
     })
     .then(function (data) {
       setAllEvidence(data);
+      setEvidenceViewLoading(false); // Meldung an evidence.js, dass die Beweise geladen sind
       applyStoredBookmarkFlags();
       setFilteredEvidence(allEvidence);
       renderDashboard();
@@ -76,6 +78,7 @@ function loadEvidenceData() {
       if (currentPage === "evidence") renderEvidenceList();
     })
     .catch(function (err) {
+      setEvidenceViewLoading(false); // Meldung an evidence.js, dass die Beweise geladen sind (auch wenn es fehlschlägt)
       console.error("Failed to load evidence.json", err);
       alert("Evidence could not be loaded. Some views may be incomplete.");
     });

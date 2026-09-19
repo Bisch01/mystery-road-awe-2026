@@ -28,7 +28,12 @@ import { saveBookmarksToStorage, saveNoteForEvidence, loadNoteForEvidence } from
 
 // nur diese View benutzt sie -> kein export
 let selectedEvidence = null;
-let evidenceViewLoading = false;
+let evidenceViewLoading = true;
+// Setter, damit api.js melden kann, dass die Beweisstücke geladen sind.
+// evidenceViewLoading selbst bleibt privat.
+export function setEvidenceViewLoading(value) {
+  evidenceViewLoading = value;
+}
 let latestSearchRequestId = 0;
 
 // --- Dropdowns ---
