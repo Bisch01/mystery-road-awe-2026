@@ -14,7 +14,6 @@ import {
     setAllTimeline,
 } from "./state.js";
 import { renderDashboard } from "./views/dashboard.js";
-import { renderEvidenceList, applyStoredBookmarkFlags } from "./views/evidence.js";
 import { renderTimeline } from "./views/timeline.js";
 import { populateAllDropdowns } from "./dropdowns.js";
 import { renderEvidenceList, applyStoredBookmarkFlags, setEvidenceViewLoading } from "./views/evidence.js";
