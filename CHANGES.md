@@ -283,3 +283,61 @@ Der Unterschied: `fetch` braucht auch als klassisches Script einen Server, das
 war also schon vorher so. Neu ist, dass jetzt **gar kein Code mehr läuft** statt
 nur die Datenanfragen zu scheitern. Zwei getrennte Fehlermeldungen, eine Ursache:
 die Same-Origin-Policy.
+
+## Demo 3 — Bug: Async / Promise-Handling
+
+**Symptom:** Die Evidence-Ansicht bleibt dauerhaft leer, der Lade-Indikator dreht
+endlos. Keine Fehlermeldung in der Konsole. Das Dashboard zeigt gleichzeitig
+"18 Evidence items" an — die Daten sind also geladen.
+
+**Reproduktion:**
+1. App über Live Server öffnen
+2. Auf den Reiter "Evidence" klicken
+→ Erwartet: 18 Evidence-Karten.
+→ Tatsächlich: leere Liste, Lade-Indikator sichtbar, Konsole sauber.
+
+**Root Cause:** `evidenceViewLoading` in `js/views/evidence.js` startet als `true`
+und wird nirgends zurückgesetzt. `renderEvidenceList` prüft das Flag als Erstes
+und verlässt die Funktion mit `return`, bevor gezeichnet wird.
+
+In Begriffen der Async-Operation: `loadEvidenceData` holt `data/evidence.json`
+per `fetch`. Das Flag hätte im `.then()`-Callback — also nach dem Auflösen des
+Promise — auf `false` gesetzt werden müssen. Genau dieser Schritt fehlte. Der
+Ladezustand wird betreten, aber nie verlassen. Der Bug passiert also nicht beim
+Start und nicht während des Wartens, sondern **nach erfolgreichem Auflösen**:
+das Promise liefert die Daten korrekt (das Dashboard zeigt sie ja), nur die
+Zustandsänderung, die daran hängen müsste, findet nicht statt.
+
+**Bestätigt durch:** Testweise `let evidenceViewLoading = false;` gesetzt →
+die 18 Karten erschienen sofort. Damit war belegt, dass diese eine Variable die
+Ansicht blockiert und nicht etwa fehlende Daten.
+
+**Fix:** `evidenceViewLoading` wird auf `false` gesetzt, sobald `evidence.json`
+verarbeitet ist — im `.then()`-Callback von `loadEvidenceData`, direkt nach
+`setAllEvidence(data)`. Zusätzlich im `.catch()`, damit der Lade-Indikator auch
+bei einem Fehlschlag verschwindet statt endlos zu drehen.
+
+Weil das Flag privat in `views/evidence.js` bleibt, geschieht das über einen
+exportierten Setter `setEvidenceViewLoading(value)` — nach demselben Muster wie
+die Setter in `state.js`.
+
+**Kein Symptom-Patch:** Der Startwert `true` ist richtig und bleibt. Hätte man
+ihn auf `false` geändert, würde der Lade-Indikator nie erscheinen — die Funktion,
+die das Flag haben soll, wäre entfernt statt repariert.
+
+**Verifiziert:**
+- 18 Karten erscheinen, Lade-Indikator verschwindet
+- Dashboard-Zahl (18) und Listenlänge stimmen überein
+- Mit gedrosseltem Netz (DevTools → Netzwerk → Slow 3G) ist der Lade-Indikator
+  kurz sichtbar und verschwindet dann — das Flag erfüllt jetzt seinen Zweck
+
+**Commits:** `demo-1-done` / `37d07c3` (kaputt) → `4b449cb` (heil)
+
+### Fragen
+
+- **Welche Async-Operation, und in welcher Phase passiert der Bug?**
+  `fetch("data/evidence.json")` in `loadEvidenceData`. Der Fehler liegt nicht im
+  Laden selbst — das gelingt — sondern im `.then()`-Callback: dort fehlte die
+  Zustandsänderung, die das Ende des Ladevorgangs signalisiert. Bestätigt, indem
+  ich das Flag testweise überschrieben habe und die Liste sofort erschien; die
+  Daten waren also längst da.

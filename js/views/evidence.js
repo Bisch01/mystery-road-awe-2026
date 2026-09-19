@@ -98,6 +98,7 @@ function getFilteredEvidence() {
     if (matches) results.push(item);
   }
 
+  sortEvidence(results);
   setFilteredEvidence(results);
   return results;
 }
@@ -193,26 +194,33 @@ export function applyStoredBookmarkFlags() {
 }
 
 export function handleSortChange() {
+  // Nur neu zeichnen. Die Sortierung passiert in getFilteredEvidence, weil dort
+  // das Array entsteht, das tatsächlich gerendert wird.
+  renderEvidenceList();
+}
+
+// privat: sortiert die übergebene Liste in place, nach dem aktuellen Dropdown-Wert
+function sortEvidence(list) {
   const sortValue = document.getElementById("sortEvidence").value;
 
   if (sortValue === "title-asc") {
-    filteredEvidence.sort(function (a, b) {
+    list.sort(function (a, b) {
       return a.title.localeCompare(b.title);
     });
   } else if (sortValue === "title-desc") {
-    filteredEvidence.sort(function (a, b) {
+    list.sort(function (a, b) {
       return b.title.localeCompare(a.title);
     });
   } else if (sortValue === "date-asc") {
-    filteredEvidence.sort(function (a, b) {
+    list.sort(function (a, b) {
       return new Date(a.timestamp) - new Date(b.timestamp);
     });
   } else {
-    filteredEvidence.sort(function (a, b) {
+    list.sort(function (a, b) {
       return new Date(b.timestamp) - new Date(a.timestamp);
     });
   }
-  renderEvidenceList();
+  return list;
 }
 
 export function clearFilters() {

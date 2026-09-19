@@ -71,7 +71,7 @@ function loadEvidenceData() {
       setAllEvidence(data);
       setEvidenceViewLoading(false); // Meldung an evidence.js, dass die Beweise geladen sind
       applyStoredBookmarkFlags();
-      setFilteredEvidence(allEvidence);
+      setFilteredEvidence(allEvidence.slice()); // .sclice() = Kopie, damit die Referenz nicht gleich ist
       renderDashboard();
       populateAllDropdowns();
       if (currentPage === "evidence") renderEvidenceList();
