@@ -341,3 +341,111 @@ die das Flag haben soll, wäre entfernt statt repariert.
   Zustandsänderung, die das Ende des Ladevorgangs signalisiert. Bestätigt, indem
   ich das Flag testweise überschrieben habe und die Liste sofort erschien; die
   Daten waren also längst da.
+
+  ## Demo 2 — Bug: Mutation / Referenz
+
+**Symptom:** Das Sortier-Dropdown in der Evidence-Ansicht hat keinerlei Wirkung.
+Die Kartenreihenfolge bleibt bei allen vier Optionen identisch.
+
+**Vorgeschichte:** Dieser Bug war zunächst unsichtbar, weil die Evidence-Liste
+wegen des Async-Bugs aus Demo 3 überhaupt keine Karten anzeigte. Er wurde erst
+sichtbar, nachdem `evidenceViewLoading` korrekt zurückgesetzt wurde.
+
+**Reproduktion:**
+1. App öffnen, Reiter "Evidence"
+2. Reihenfolge der Karten-IDs notieren (E01, E02, E03, …)
+3. Im Sortier-Dropdown (2. Werkzeugzeile) "Title (A–Z)" wählen
+4. Reihenfolge erneut ablesen
+→ Erwartet: alphabetisch nach Titel sortiert.
+→ Tatsächlich: unverändert E01, E02, E03, … Ebenso bei "Oldest first" und
+  "Title (Z–A)". Keine Fehlermeldung in der Konsole.
+
+**Root Cause:** Zwei Referenz-Probleme, die zusammenwirken.
+
+*(a) Sortiert wird ein Array, das sofort weggeworfen wird.*
+
+`handleSortChange` rief `filteredEvidence.sort(...)` auf und danach
+`renderEvidenceList()`. Diese ruft `getFilteredEvidence()`, und dort entsteht mit
+`const results = []` ein **neues** Array, das in der Reihenfolge von `allEvidence`
+befüllt und am Ende per `setFilteredEvidence(results)` zugewiesen wird. Der Name
+`filteredEvidence` zeigt danach auf dieses neue Array; das eben sortierte ist
+unerreichbar und wird vom Garbage Collector eingesammelt. Gezeichnet wird
+`results` — in der ursprünglichen Reihenfolge.
+
+Die Sortierung fand also statt, nur am falschen Objekt.
+
+*(b) Beim Laden teilten sich zwei Namen ein Array.*
+
+In `js/api.js` stand `setFilteredEvidence(allEvidence)` — ohne Kopie. Beide Namen
+zeigten auf dasselbe Array. Solange das gilt, würde jede In-place-Operation auf
+`filteredEvidence` (wie `.sort()`) auch `allEvidence` verändern und damit das
+Dashboard beeinflussen, das über `allEvidence.slice(-5)` die "Recent evidence"
+anzeigt.
+
+Beides sind Referenzfehler, aber in entgegengesetzte Richtungen: einmal wird eine
+Referenz ersetzt, wo sie hätte bestehen bleiben müssen; einmal wird eine Referenz
+geteilt, wo eine Kopie nötig gewesen wäre.
+
+**Fix:**
+
+1. Die Sortierung wandert dorthin, wo das gerenderte Array entsteht: in
+   `getFilteredEvidence`, direkt vor `setFilteredEvidence(results)`. Ausgelagert
+   in eine private Funktion `sortEvidence(list)`, die den aktuellen Dropdown-Wert
+   aus dem DOM liest.
+2. `handleSortChange` löst nur noch `renderEvidenceList()` aus — genau wie alle
+   anderen Filter-Dropdowns, die ihren Wert bei jedem Render frisch lesen. Damit
+   ist die Sortierung konsistent mit dem Rest der Ansicht behandelt.
+3. In `js/api.js`: `setFilteredEvidence(allEvidence.slice())`. `.slice()` ohne
+   Argumente erzeugt ein neues Array mit denselben Elementen, sodass Änderungen an
+   `filteredEvidence` `allEvidence` nicht mehr erreichen.
+
+**Kein Symptom-Patch:** Naheliegend wäre gewesen, in `handleSortChange` eine Kopie
+zu sortieren. Das hätte nichts geändert — auch die Kopie wäre von
+`getFilteredEvidence` überschrieben worden. Entscheidend ist, *welches* Array
+sortiert wird, nicht ob es eine Kopie ist.
+
+**Verifiziert:**
+- Alle vier Optionen ändern die Reihenfolge
+- "Oldest first" ist exakt die Umkehrung von "Newest first", ebenso
+  "Title (Z–A)" von "Title (A–Z)"
+- Sortierung bleibt erhalten, wenn danach ein Filter gesetzt wird
+- Bekannte, gewollte Nebenwirkung: die Startreihenfolge ist jetzt nach Datum
+  absteigend statt Dateireihenfolge. Das Dropdown stand von Anfang an auf
+  "Newest first" — vorher hat die App diese Sortierung nur behauptet.
+
+**Commits:** `4b449cb` (kaputt) → `e528391` (heil)
+
+### Fragen
+
+- **Referenz vs. Kopie in JavaScript:**
+  Eine Variable, die auf ein Objekt oder Array zeigt, enthält nicht die Daten
+  selbst, sondern einen Verweis darauf. `b = a` kopiert nur den Verweis — danach
+  zeigen beide Namen auf dasselbe Array, und `b.push(x)` ist auch für `a`
+  sichtbar. `b = a.slice()` erzeugt dagegen ein zweites Array; die beiden sind
+  danach unabhängig.
+
+  Beide Hälften dieses Bugs erklären sich daraus. Bei (a) wurde ein Array
+  sortiert und dann der Name auf ein anderes Array umgebogen — die Arbeit war
+  weg, obwohl `.sort()` einwandfrei gelaufen war. Bei (b) zeigten zwei Namen auf
+  dasselbe Array, sodass eine Änderung an einem den anderen mit verändert hätte.
+  Dieselbe Eigenschaft der Sprache, zwei entgegengesetzte Fehler.
+
+  Wichtig ist außerdem der Unterschied zwischen *verändern* und *ersetzen*:
+  `.sort()` verändert das vorhandene Array in place, `.slice()` und das
+  Array-Literal `[]` erzeugen ein neues. Nur bei der ersten Sorte wirkt sich
+  etwas auf andere Namen aus, die auf dasselbe Array zeigen.
+
+- **Exakte User-Aktionen und Systemzustand, die den Bug auslösen:**
+  Die Evidence-Ansicht muss gerendert sein (dafür musste erst der Demo-3-Bug
+  behoben werden), dann genügt eine Änderung am Sortier-Dropdown. Der Bug trat
+  immer auf, nicht nur unter bestimmten Bedingungen.
+
+- **Hätte ich ihn durch reines Lesen gefunden?**
+  Theoretisch ja — die drei beteiligten Funktionen stehen untereinander in einer
+  Datei. Praktisch nein, und zwar aus zwei Gründen. Erstens wirkt jede Funktion
+  für sich korrekt: `handleSortChange` sortiert richtig, `getFilteredEvidence`
+  filtert richtig. Der Fehler entsteht erst aus ihrem Zusammenspiel — genauer aus
+  der Reihenfolge, in der sie einander aufrufen. Zweitens war der Bug vor dem
+  Demo-3-Fix gar nicht auslösbar: bei leerer Liste gibt es nichts zu sortieren.
+  Ich habe ihn gefunden, indem ich nach dem ersten Fix die Ansicht systematisch
+  durchprobiert habe — also durch Benutzen, nicht durch Lesen.
