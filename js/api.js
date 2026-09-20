@@ -37,29 +37,22 @@ function hideLoadingStep(){
     }
 }
 
-//holt case.json, people.json und locations.json streng nacheinander, danach Dashboard rendern und Dropdowns füllen
-function loadCorePeopleAndLocations() {
-  return fetch("data/case.json").then(function (caseRes) {
-    return caseRes.json().then(function (caseJson) {
-      setCaseData(caseJson);
+async function loadCorePeopleAndLocations() {
+  const caseRes = await fetch("data/case.json");
+  const caseJson = await caseRes.json();
+  setCaseData(caseJson);
 
-      return fetch("data/people.json").then(function (peopleRes) {
-        return peopleRes.json().then(function (peopleJson) {
-          setAllPeople(peopleJson);
+  const peopleRes = await fetch("data/people.json");
+  const peopleJson = await peopleRes.json();
+  setAllPeople(peopleJson);
 
-          return fetch("data/locations.json").then(function (locationsRes) {
-            return locationsRes.json().then(function (locationsJson) {
-              setAllLocations(locationsJson);
+  const locationsRes = await fetch("data/locations.json");
+  const locationsJson = await locationsRes.json();
+  setAllLocations(locationsJson);
 
-              hideLoadingStep(); //Countdown 2 -> 1
-              renderDashboard(); //Bildschirm zeichnen
-              populateAllDropdowns(); //Dropdowns füllen
-            });
-          });
-        });
-      });
-    });
-  });
+  hideLoadingStep();
+  renderDashboard();
+  populateAllDropdowns();
 }
 
 //holt Beweisstücke, setzt gespeicherten Bookmark-Status und rendert neu
@@ -88,32 +81,25 @@ function loadEvidenceData() {
     });
 }
 
-//holt Timeline
-function loadTimelineData() {
-  return fetch("data/timeline.json")
-    .then(function (res) {
-      return res.json();
-    })
-    .then(function (data) {
-      setAllTimeline(data);
-      renderDashboard();
-      if (currentPage === "timeline") renderTimeline();
-      populateAllDropdowns();
-    })
-    .catch(function (err) {
-      console.log("timeline load error", err);
-    })
-    .finally(function () {
-      hideLoadingStep();
-    });
+async function loadTimelineData() {
+  try {
+    const res = await fetch("data/timeline.json");
+    const data = await res.json();
+    setAllTimeline(data);
+    renderDashboard();
+    if (currentPage === "timeline") renderTimeline();
+    populateAllDropdowns();
+  } catch (err) {
+    console.log("timeline load error", err);
+  } finally {
+    hideLoadingStep();
+  }
 }
 
-//Einstieg: Overlay einblenden, Zähler auf 3 und dann Kette starten
-export function loadAllData() {
+export async function loadAllData() {
   showLoadingOverlay("Loading case file…");
   loadingStepsRemaining = 3;
-  return loadCorePeopleAndLocations().then(function () {
-    loadEvidenceData();
-    loadTimelineData();
-  });
+  await loadCorePeopleAndLocations();
+  loadEvidenceData();
+  loadTimelineData();
 }
