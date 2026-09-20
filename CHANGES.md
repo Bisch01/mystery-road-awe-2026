@@ -342,7 +342,7 @@ die das Flag haben soll, wäre entfernt statt repariert.
   ich das Flag testweise überschrieben habe und die Liste sofort erschien; die
   Daten waren also längst da.
 
-  ## Demo 2 — Bug: Mutation / Referenz
+## Demo 2 — Bug: Mutation / Referenz
 
 **Symptom:** Das Sortier-Dropdown in der Evidence-Ansicht hat keinerlei Wirkung.
 Die Kartenreihenfolge bleibt bei allen vier Optionen identisch.
@@ -450,13 +450,14 @@ sortiert wird, nicht ob es eine Kopie ist.
   Ich habe ihn gefunden, indem ich nach dem ersten Fix die Ansicht systematisch
   durchprobiert habe — also durch Benutzen, nicht durch Lesen.
 
-  ## Demo 4 — Bug: stiller Bug (nur Konsole)
+## Demo 4 — Bug: stiller Bug (nur Konsole)
 
-**Konsolen-Ausgabe (wörtlich):
+**Konsolen-Ausgabe (wörtlich):**
 
+```
 Uncaught TypeError: Cannot read properties of undefined (reading 'getAttribute')
 at main.js:29
-
+```
 
 **Reproduktion:**
 1. DevTools öffnen (F12), Tab "Konsole", **bevor** irgendetwas angeklickt wird
@@ -507,7 +508,7 @@ Kommentar als "nicht anfassen" markiert — überall sonst wurde `var` bereits z
 `let`/`const`, nur hier hätte das den Bug versehentlich mitbehoben. Der Kommentar
 wurde mit diesem Fix entfernt.
 
-**Commits:** `da6edbf` (kaputt) → `<hash-fixed>` (heil)
+**Commits:** `da6edbf` (kaputt) → `92653a8` (heil)
 
 ### Fragen
 
@@ -528,7 +529,7 @@ wurde mit diesem Fix entfernt.
   Buttons. Ein kaputter Listener neben einem funktionierenden ist von außen
   grundsätzlich nicht unterscheidbar von "alles in Ordnung".
 
-  ## Demo 5 — Vollständiger Durchgang & Reflexion
+## Demo 5 — Vollständiger Durchgang & Reflexion
 
 Systematisch durchgetestet: Dashboard-Statistiken · Evidence Suche/Filter/
 Sortierung/Bookmark/Detail/Notizen · People- und Locations-Tabs samt
@@ -1011,6 +1012,111 @@ Stelle im Projekt.
 Mechanismen im Kopf zu halten, statt nur einen.
 
 Der Aufwand für den Fix war eine gelöschte Zeile.
+
+
+## Demo 9 — Verschachtelte Promises → async/await
+
+**Tiefste Kette:** `loadCorePeopleAndLocations` in `js/api.js` — sechs
+`.then()`-Ebenen, zwölf Einrückungsstufen. Skizze vor dem Umbau: siehe oben.
+Jede Ebene startet erst, wenn die vorige aufgelöst **und** verarbeitet ist.
+Inhaltlich nötig ist das nicht; das Parallelisieren bleibt laut Aufgabe einer
+späteren Übung vorbehalten und wurde bewusst nicht gemacht.
+
+**Konvertiert:**
+1. `loadCorePeopleAndLocations` — aus sechs Ebenen wird eine gerade Liste
+2. `loadTimelineData` — zeigt alle drei Entsprechungen: `.then` → `try`,
+   `.catch` → `catch`, `.finally` → `finally`
+3. `loadAllData` — `await` vor dem Kern, bewusst **kein** `await` vor
+   `loadEvidenceData()` und `loadTimelineData()`, damit diese beiden wie bisher
+   parallel starten
+
+**Bewusst nicht konvertiert:** `loadEvidenceData` bleibt als `.then()`-Kette
+stehen, damit beide Schreibweisen in derselben Datei nebeneinander vergleichbar
+sind.
+
+**Verifiziert:** Netzwerk-Tab zeigt unverändert `case → people → locations`
+nacheinander, danach `evidence` und `timeline` gleichzeitig. Dashboard-Zahlen,
+Evidence-Karten, Filter und Timeline unverändert; Konsole ohne neue Fehler.
+Zusätzlich mit Breakpoint auf der ersten `await`-Zeile durchgesteppt.
+
+### Fragen
+
+- **Warum ist die verschachtelte Kette schwerer zu lesen, obwohl beide identisch
+  laufen?**
+  Drei Gründe. *Richtung:* Der zeitliche Ablauf ist erst-links-dann-rechts statt
+  von oben nach unten — die Reihenfolge der Ausführung entspricht nicht der
+  Lesereihenfolge. *Rauschen:* Auf zwölf Zeilen fachlichen Code kamen sechs
+  `function (x) { return ... }`-Hüllen plus die passenden schließenden Klammern;
+  das Verhältnis von Struktur zu Inhalt ist etwa 2:1. *Zuordnung:* Am Ende
+  stehen sechs schließende Klammerpaare untereinander, und man muss zählen, um zu
+  wissen, welches zu welcher Ebene gehört. Beim Einfügen eines vierten Ladeschritts
+  hätte man an genau der richtigen Stelle eine weitere Ebene öffnen müssen.
+
+- **Was macht `await` mit der Ausführung, und was tut das restliche Programm
+  derweil?**
+  `await` pausiert **nur die `async`-Funktion, in der es steht**. Ihr Zustand —
+  lokale Variablen, Position im Code — wird festgehalten; die Funktion kehrt
+  vorläufig zum Aufrufer zurück und wird fortgesetzt, sobald das erwartete Promise
+  erfüllt ist. Der Rest des Programms läuft normal weiter: Event-Listener feuern,
+  Klicks werden verarbeitet, andere Ladevorgänge laufen. JavaScript hat einen
+  einzigen Thread, aber `await` blockiert ihn nicht — es gibt ihn zurück. Genau
+  deshalb kann die App schon bedienbar sein, während die Daten noch laden.
+
+- **`async` gibt immer ein Promise zurück — Beweis.**
+  `loadCorePeopleAndLocations` enthält kein `return`, gibt also implizit
+  `undefined` zurück. Trotzdem lässt sich `.then()` darauf aufrufen:
+
+```js
+  loadCorePeopleAndLocations().then(v => console.log("fertig:", v));
+  // → fertig: undefined
+```
+
+  Dass `.then()` überhaupt existiert, beweist, dass ein Promise zurückkommt, und
+  `undefined` ist der Wert, mit dem es auflöst. Auch `return 42` in einer
+  `async`-Funktion liefert dem Aufrufer kein `42`, sondern ein Promise, das mit
+  `42` auflöst.
+
+- **Das `async/await`-Äquivalent zu `.catch()` — und was ohne passiert.**
+  `try/catch` um den `await`-Aufruf herum, wie in `loadTimelineData` umgesetzt.
+  Fehlt es und das erwartete Promise wird abgelehnt, wird die Ablehnung an den
+  Aufrufer weitergereicht. Kümmert sich auch dort niemand darum, endet sie als
+  **unhandled promise rejection**: eine Fehlermeldung in der Konsole, aber kein
+  Absturz der Seite. Das Tückische daran ist, dass der restliche Code weiterläuft,
+  als wäre nichts geschehen — die Funktion ist an der `await`-Zeile abgebrochen,
+  alles danach wurde nie ausgeführt, und niemand hat es gemerkt. Genau diese
+  Konstellation steckt hinter Bug 5.6.
+
+- **Ist `async/await` schneller?**
+  Nein. Beide Varianten benutzen dieselben Promises und dieselbe Event-Loop; es
+  entsteht kein zusätzlicher Parallelismus. `async/await` ist Syntax für dasselbe
+  Verhalten. Was sich ändert, ist ausschließlich die Lesbarkeit und die
+  Fehlerbehandlung (ein `try/catch` statt verteilter `.catch()`-Aufrufe). In
+  diesem Refactor blieb die Ladezeit erwartungsgemäß gleich — der Netzwerk-Tab
+  zeigt dieselben drei sequenziellen Balken wie vorher. Schneller würde es erst
+  durch `Promise.all`, und genau das ist laut Aufgabenstellung für eine spätere
+  Übung vorgesehen.
+
+- **Ein `await` entfernt — was bricht?**
+  Testweise in `loadCorePeopleAndLocations` das `await` vor `caseRes.json()`
+  entfernt:
+
+```js
+  const caseJson = caseRes.json();   // ohne await
+  setCaseData(caseJson);
+```
+
+  `caseJson` ist dann ein **Promise**, kein Objekt. `setCaseData` schreibt das
+  Promise in den Zustand, und `renderDashboard` liest `caseData.title` — das
+  Promise hat keine solche Eigenschaft, also `undefined`. Auf dem Dashboard steht
+  statt des Falltitels der Fallback "Case". Kein Fehler, keine rote Zeile in der
+  Konsole, nur ein falscher Wert.
+
+  Das ist genau dieselbe Kategorie wie **Bug 5.4**: `loadNoteAsync("E01")` wurde
+  ohne Auspacken geloggt, und in der Konsole stand `Promise {...}` statt der
+  Notiz. Beide Male wird ein Versprechen auf einen Wert behandelt, als wäre es
+  der Wert. Und beide Male schweigt JavaScript, weil ein Promise ein
+  vollkommen gültiges Objekt ist — der Fehler zeigt sich erst dort, wo jemand
+  eine Eigenschaft erwartet, die es nicht hat.
 
 ## Demo 10 — Arrow Functions
 
