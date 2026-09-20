@@ -1011,3 +1011,126 @@ Stelle im Projekt.
 Mechanismen im Kopf zu halten, statt nur einen.
 
 Der Aufwand für den Fix war eine gelöschte Zeile.
+
+## Demo 10 — Arrow Functions
+
+**Konvertiert:**
+
+| Funktion | Datei | warum guter Kandidat |
+|---|---|---|
+| `findEvidenceById`, `findPersonById`, `findLocationById` | `utils.js` | for-Schleife → `.find()`, je 6 Zeilen auf 1 |
+| `evidenceMentionsPerson` | `utils.js` | reine Prädikatsfunktion ohne `this` |
+| `getStatusBadgeClass`, `getRelevanceBadgeClass` | `utils.js` | reine Übersetzer |
+| `statCardHTML` | `views/dashboard.js` | ein Ausdruck, implizites return |
+| `certaintyBadgeClass` | `views/timeline.js` | reine Übersetzung |
+| anonymer `input`-Callback | `main.js` | Aufgabe 2 |
+
+**Bewusst nicht konvertiert:** `initApp` und `setupEventListeners` in `main.js`.
+
+**Verifiziert:** Alle fünf Ansichten, Filter, Sortierung, Timeline, Workspace
+unverändert; Konsole ohne neue Fehler. Besonders geprüft: `findPersonById` mit
+unbekannter ID gibt weiterhin `null`, nicht `undefined`.
+
+### Fragen
+
+- **`this` in Arrow Functions vs. normalen Funktionen.**
+  Eine normale Funktion bekommt ihr eigenes `this`, bestimmt davon, *wie* sie
+  aufgerufen wird: als Methode zeigt es auf das Objekt, als Listener auf das
+  Element, sonst auf `undefined` (strict mode). Eine Arrow Function hat **kein
+  eigenes `this`** — sie übernimmt das der umgebenden Stelle, und zwar dort, wo
+  sie geschrieben steht, nicht wo sie aufgerufen wird.
+
+  Als Objektmethode ist das riskant: `const obj = { name: "x", getName: () => this.name }`
+  greift nicht auf `obj` zu, sondern auf das `this` des umgebenden Scopes — auf
+  Modulebene `undefined`. Als Callback ist es dagegen meist erwünscht, weil man
+  sonst mit `.bind(this)` oder einer Hilfsvariable arbeiten müsste.
+
+  **Befund in diesem Projekt:** `this` kommt im gesamten Code kein einziges Mal
+  vor (`grep -rn "\bthis\b" js/` liefert nur Treffer in Kommentaren und einem
+  Platzhaltertext). Es gibt keine Klassen und keine Objektmethoden. Die Umstellung
+  war deshalb in dieser Hinsicht gefahrlos — und genau deshalb musste die
+  Begründung für die *nicht* konvertierte Funktion über Hoisting laufen statt
+  über `this`.
+
+- **Kein `new`, kein eigenes `arguments` — hat das eine Konvertierung verhindert?**
+  Nein, in diesem Projekt nicht. `new` kommt nur bei eingebauten Typen vor
+  (`new Date(...)`, `new Promise(...)`); keine eigene Funktion wird als
+  Konstruktor benutzt. `arguments` wird nirgends verwendet — alle Funktionen haben
+  feste benannte Parameter. Beide Einschränkungen waren also irrelevant.
+
+- **Hoisting — hat das eine Rolle gespielt? Ja, an zwei Stellen.**
+
+  *Verhindernd:* `main.js` endet mit
+  `window.addEventListener("DOMContentLoaded", initApp);`. Diese Zeile wird
+  **während der Modul-Auswertung** ausgeführt. Als Funktionsdeklaration ist
+  `initApp` gehoistet und die Position im File egal; als `const`-Arrow wäre die
+  Reihenfolge tragend. Nachgewiesen mit einem Minimalbeispiel:
+
+  const-Arrow, Referenz oberhalb der Deklaration:
+ReferenceError: Cannot access 'initApp' before initialization
+function-Deklaration, gleiche Anordnung:
+läuft durch
+
+
+  Heute steht die Deklaration oberhalb, es würde also auch so funktionieren — aber
+  eine spätere Umsortierung der Datei würde den Start der App brechen, und der
+  Fehler träte weit entfernt von der eigentlichen Änderung auf. Deshalb bleibt es
+  eine Funktionsdeklaration.
+
+  *Toleriert:* `statCardHTML` (dashboard.js) und `certaintyBadgeClass`
+  (timeline.js) werden jeweils **oberhalb** ihrer Deklaration verwendet — in
+  `renderDashboard` bzw. `renderTimeline`. Das funktioniert, weil diese
+  Render-Funktionen erst nach der Modul-Auswertung aufgerufen werden und die
+  temporal dead zone dann längst vorbei ist. Die Umstellung ist also korrekt,
+  macht aber die Reihenfolge im File von "egal" zu "heute unkritisch". Als
+  Konsequenz würde ich in einer echten Codebasis die Hilfsfunktionen vor ihre
+  Verwendung setzen, sobald sie `const`-Arrows sind.
+
+- **Konkretes Before/After, mit Laufzeitunterschied?**
+
+```js
+  // vorher
+  export function findPersonById(id) {
+    for (let i = 0; i < allPeople.length; i++) {
+      if (allPeople[i].id === id) return allPeople[i];
+    }
+    return null;
+  }
+
+  // nachher
+  export const findPersonById = (id) => allPeople.find((person) => person.id === id) || null;
+```
+
+  **Verhaltensunterschiede, die es zu beachten gab:**
+
+  1. `.find()` liefert bei keinem Treffer `undefined`, die Schleife lieferte
+     `null`. Ohne `|| null` wäre das eine echte Verhaltensänderung gewesen —
+     `null` und `undefined` verhalten sich bei `if (!x)` zwar gleich, aber bei
+     `x === null` nicht. Mit `|| null` ist das Verhalten identisch.
+  2. Die Arrow Function hat kein eigenes `this` und kein `arguments`. Da beides
+     hier nicht benutzt wurde, ohne Folgen.
+  3. Hoisting: siehe oben, an dieser Stelle unkritisch.
+
+  Davon abgesehen ist es reine Lesbarkeit. Die Schleife und `.find()` machen
+  dasselbe; `.find()` bricht ebenfalls beim ersten Treffer ab. Laufzeitmäßig ist
+  kein Unterschied messbar, schon gar nicht bei sechs Personen.
+
+- **Vorgeschlagene Team-Regel.**
+
+  *Funktionsdeklarationen* (`function name() {}`) für alles, was auf Modulebene
+  steht und exportiert oder als Einstiegspunkt dient — also die `render*`-,
+  `load*`- und `handle*`-Funktionen. Begründung: sie sind gehoistet, wodurch die
+  Reihenfolge im File nie tragend wird, sie erscheinen mit ihrem Namen im Call
+  Stack, und sie heben sich optisch von den Hilfsfunktionen ab.
+
+  *Arrow Functions* für Callbacks (`.map`, `.filter`, `.find`, `.sort`,
+  `addEventListener`) und für kurze Hilfsfunktionen ohne eigenen Zustand.
+  Begründung: weniger Rauschen, implizites return bei Einzeilern, und kein
+  eigenes `this` — bei Callbacks genau das gewünschte Verhalten.
+
+  *Nie* eine Arrow Function als Objektmethode oder dort, wo `this` oder
+  `arguments` gebraucht wird.
+
+  Die Regel lässt sich in einem Satz prüfen: **Steht der Name im Call Stack und
+  soll die Position im File egal sein? Dann `function`. Ist es ein Argument an
+  eine andere Funktion? Dann Arrow.**

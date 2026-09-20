@@ -95,13 +95,12 @@ export function renderTimeline() {
   }
 }
 
-// privat: HTML-Baustein
-function certaintyBadgeClass(certainty) {
+const certaintyBadgeClass = (certainty) => {
   if (certainty === "confirmed") return "reviewed";
   if (certainty === "contradictory") return "critical";
   if (certainty === "reported") return "flagged";
   return "unreviewed";
-}
+};
 
 // privat: wird nur aus renderTimeline heraus geöffnet
 function openEvidenceModal(evidenceId) {

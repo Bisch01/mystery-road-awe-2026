@@ -68,6 +68,7 @@ export function renderDashboard() {
 }
 
 // privat: reiner HTML-Baustein, nur renderDashboard braucht ihn
-function statCardHTML(value, label) {
-  return '<div class="stat-card"><div class="stat-value">' + value + '</div><div class="stat-label">' + label + "</div></div>";
-}
+// Demo 10: Arrow Function mit implizitem return -- ein einzelner Ausdruck
+const statCardHTML = (value, label) =>
+  '<div class="stat-card"><div class="stat-value">' + value + '</div><div class="stat-label">' + label + "</div></div>";
+
