@@ -765,3 +765,249 @@ durchlaufen (alle fünf Ansichten, Konsole offen, einmal mit Drosselung).
 Vergleichsgrößen dabei: 18 Karten, Dashboard-Zahlen 18/6/6, Konsole ohne Fehler,
 Bookmarks und Notizen überstehen den Reload. So war nach jedem Schritt belegt,
 dass die bereits behobenen Bugs behoben blieben und keine neuen dazukamen.
+
+## Demo 8 — Clean Coding: Globals, var/let/const, Code Smells
+
+### Alle top-level `var` im ursprünglichen `app.js`
+
+19 Stück, alle im globalen Scope und damit von jeder der 1085 Zeilen les- und
+schreibbar.
+
+| # | Variable | nach dem Split |
+|---|---|---|
+| 1 | `allEvidence` | `state.js`, geteilt |
+| 2 | `filteredEvidence` | `state.js`, geteilt |
+| 3 | `selectedEvidence` | privat in `views/evidence.js` |
+| 4 | `bookmarks` | `state.js`, geteilt |
+| 5 | `currentPage` | `state.js`, geteilt |
+| 6 | `allPeople` | `state.js`, geteilt |
+| 7 | `allLocations` | `state.js`, geteilt |
+| 8 | `allTimeline` | `state.js`, geteilt |
+| 9 | `caseData` | `state.js`, geteilt |
+| 10 | `currentPeopleTab` | privat in `views/people.js` |
+| 11 | `loadingStepsRemaining` | privat in `api.js` |
+| 12 | `evidenceViewLoading` | privat in `views/evidence.js` |
+| 13 | `viewRendered` | `state.js`, geteilt (als `const`) |
+| 14 | `notesStore` | `state.js`, geteilt |
+| 15 | `modalCloseListenerCount` | privat in `views/timeline.js` |
+| 16 | `STORAGE_KEY_BOOKMARKS` | privat in `storage.js` |
+| 17 | `STORAGE_KEY_NOTES` | privat in `storage.js` |
+| 18 | `STORAGE_KEY_HYPOTHESIS` | `storage.js`, exportiert |
+| 19 | `latestSearchRequestId` | privat in `views/evidence.js` |
+
+### Kollisionsrisiko — drei Beispiele
+
+**`currentPage`** ist der gefährlichste Name der Liste: generisch, kurz, und in
+jeder zweiten Web-App vorhanden. Würde jemand eine Paginierung für die
+Evidence-Liste ergänzen und dort ebenfalls `var currentPage = 1` schreiben, gäbe
+es keinen Fehler und keine Warnung — die zweite Deklaration überschreibt die
+erste stillschweigend. Ab dem ersten Seitenwechsel der Paginierung stünde in
+`currentPage` eine Zahl, und `handleHashChange` würde die falsche Ansicht
+auswählen. Der Fehler würde in der Navigation sichtbar, die Ursache läge in der
+Paginierung.
+
+*Durch den Modul-Split gelöst:* `currentPage` lebt nur in `state.js`. Ein
+Paginierungs-`currentPage` in `views/evidence.js` wäre eine völlig andere
+Variable, auch bei identischem Namen.
+
+**`bookmarks`** ist ebenso generisch. Ein zweites `bookmarks` — etwa für
+gemerkte Personen statt Beweisstücke — würde dasselbe Array überschreiben.
+Schlimmer: `saveBookmarksToStorage` würde weiterlaufen und den falschen Inhalt
+nach `remotion_bookmarks` schreiben. Der Datenverlust wäre nach dem Reload
+dauerhaft.
+
+*Gelöst:* nur `state.js` deklariert `bookmarks`; nur `storage.js` und
+`views/evidence.js` importieren es, sichtbar an den `import`-Zeilen.
+
+**`loadingStepsRemaining`** zeigt die andere Seite des Problems. Der Name ist
+spezifisch genug, dass eine Kollision unwahrscheinlich ist — aber im globalen
+Scope konnte **jede** Zeile ihn verändern. Genau hier saß Bug 5.3: der Zähler
+stand auf 2 statt 3. Solange die Variable global ist, muss man zur Fehlersuche
+die ganze Datei durchsehen; jetzt ist der Suchraum `api.js` mit 110 Zeilen, und
+der Zugriff ist auf drei Funktionen beschränkt, die alle privat sind.
+
+*Was der Modul-Split NICHT löst:* Innerhalb eines Moduls sind geteilte Variablen
+weiterhin für alle Funktionen dieses Moduls erreichbar. `views/evidence.js` hat
+mit ~360 Zeilen und drei privaten Zustandswerten immer noch eine spürbare
+Angriffsfläche — nur eben eine um den Faktor drei kleinere.
+
+### `var` → `const`/`let`
+
+Vollständig durchgezogen: im Projekt existiert kein `var` mehr
+(`grep -rn "\bvar \b" js/` liefert nichts).
+
+Entscheidungsregel: **`const` als Standard, `let` nur wenn neu zugewiesen wird.**
+Konkret heißt das:
+
+- `const` für alle DOM-Referenzen (`const container = document.getElementById(...)`),
+  für Zwischenergebnisse (`const results = []` — der Inhalt ändert sich, die
+  Variable nicht) und für Schleifenobjekte (`const item = allEvidence[i]`)
+- `let` für Schleifenzähler (`let i`), für aufsummierte Werte
+  (`let reviewedCount`), für schrittweise aufgebaute Strings (`let html = ""`)
+  und für Zustand, der ersetzt wird (`let evidenceViewLoading`)
+
+`const results = []` gefolgt von `results.push(...)` ist dabei kein Widerspruch:
+`const` verbietet die Neuzuweisung der Variablen, nicht die Veränderung ihres
+Inhalts — dasselbe Prinzip wie bei `viewRendered` in `state.js`.
+
+Der größte Teil dieser Umstellung geschah bereits beim Modul-Split (Demo 1), weil
+der Code dabei ohnehin Zeile für Zeile angefasst wurde. Eine Stelle blieb
+absichtlich zurück (siehe unten).
+
+### Code Smell 1 — Inline-Handler zur Laufzeit gesetzt
+
+`js/main.js` enthielt zwei Zeilen für dasselbe Element und dasselbe Ereignis:
+
+```js
+document.getElementById("filterStatus").addEventListener("change", renderEvidenceList);
+document.getElementById("filterStatus").setAttribute("onchange", "renderEvidenceList()");
+```
+
+Die zweite setzt per JavaScript ein Inline-Attribut — genau das, was in Demo 1 aus
+`index.html` entfernt wurde, nur im Code versteckt und deshalb bei der Textsuche
+im HTML unauffindbar.
+
+**Warum schlecht:** Attribut-Handler werden im globalen Scope ausgewertet;
+Modul-Funktionen sind nicht global. Bei jeder Änderung des Statusfilters
+erscheint in der Konsole:
+Uncaught ReferenceError: renderEvidenceList is not defined
+
+Der Filter funktioniert trotzdem, weil der `addEventListener` eine Zeile darüber
+die Arbeit macht. Also: funktionierender Code, der bei jeder Benutzung einen
+Fehler produziert — und zusätzlich zwei konkurrierende Mechanismen für dieselbe
+Aufgabe, was jeden späteren Leser verwirrt.
+
+**Fix:** Zeile ersatzlos entfernt.
+
+**Verifiziert:** Statusfilter durchgeschaltet — Filter arbeitet weiter, Konsole
+bleibt sauber.
+
+### Code Smell 2 — Derselbe Listener doppelt registriert
+
+`js/main.js` registrierte `handleHashChange` zweimal auf `hashchange`: einmal in
+`setupEventListeners`, einmal am Dateiende.
+
+**Warum schlecht:** Bei jedem Ansichtswechsel läuft die komplette Routing-Logik
+doppelt — DOM-Abfragen, Klassenwechsel, gegebenenfalls ein Render. Sichtbar ist
+nichts, weil `handleHashChange` idempotent ist. Genau das macht es tückisch: ein
+Leser kann nicht erkennen, ob die zweite Registrierung Absicht war, und traut
+sich nicht, sie zu entfernen. Bei einer teureren Render-Funktion wäre daraus ein
+Performance-Problem geworden.
+
+**Fix:** Die Registrierung am Dateiende entfernt; die in `setupEventListeners`
+bleibt, weil dort alle Listener gebündelt sind.
+
+**Verifiziert:** Alle fünf Ansichten durchgeklickt, Navigation unverändert.
+
+### Weitere erkannte, nicht behobene Smells
+
+Für die Vollständigkeit notiert; nicht behoben, weil sie für andere Demos
+gebraucht werden oder über einen reinen Aufräum-Commit hinausgehen:
+
+| Smell | Datei | warum offen |
+|---|---|---|
+| `loadNotesFromStorage` ohne `try/catch`, `loadBookmarksFromStorage` mit | `storage.js` | Live-Vorführung in Demo 7 |
+| `res.json()` ohne `res.ok`-Prüfung, drei unterschiedliche `catch`-Behandlungen | `api.js` | Demo 7 fragt nach dem aktuellen Verhalten |
+| `selectedEvidence` und `currentPeopleTab` werden gesetzt, aber nie gelesen | evidence / people | toter Zustand, reine Aufräumarbeit |
+| `loadNoteForEvidence` und `loadNoteAsync` liefern denselben Wert, einmal synchron, einmal als Promise | `storage.js` | wird in Demo 9 gebraucht |
+| `evidenceMentionsPerson` sucht in `personIds` zusätzlich nach `person.name`, obwohl dort nur IDs stehen | `utils.js` | Verhalten unklar, Änderung wäre kein reines Aufräumen |
+| `renderEvidenceList` registriert bei jedem Aufruf erneut einen Klick-Listener auf dem Container | `views/evidence.js` | Listener häufen sich an; Fix gehört inhaltlich zu einem eigenen Bug |
+
+## Fragen zu Demo 8
+
+### `var` / `let` / `const`: Scope und Reassignment
+
+**Scope:** `var` ist function-scoped — eine Deklaration irgendwo in einer Funktion
+gilt für die ganze Funktion, auch in Blöcken darüber. `let` und `const` sind
+block-scoped: sie gelten nur zwischen den geschweiften Klammern, in denen sie
+stehen, also auch pro Schleifendurchlauf einzeln.
+
+**Reassignment:** `var` und `let` erlauben Neuzuweisung, `const` nicht. `const`
+verbietet dabei nur die Neuzuweisung der *Variablen*, nicht die Veränderung des
+*Inhalts*: `const arr = []; arr.push(1)` ist erlaubt, `arr = [1]` nicht.
+
+**Hoisting:** `var`-Deklarationen werden an den Funktionsanfang gezogen und mit
+`undefined` vorbelegt — ein Zugriff davor liefert `undefined` statt eines
+Fehlers. `let` und `const` existieren zwar auch schon, sind aber bis zur
+Deklaration gesperrt (temporal dead zone); ein Zugriff davor wirft einen
+`ReferenceError`.
+
+**Konkreter Bug aus diesem Projekt** (Demo 4), `js/main.js`:
+
+```js
+for (var i = 0; i < navButtons.length; i++) {
+  navButtons[i].addEventListener("click", function () {
+    var targetView = navButtons[i].getAttribute("data-view");   // i ist 5
+  });
+}
+```
+
+Durch `var` gibt es **ein einziges `i`** für die gesamte Funktion. Die fünf
+Callbacks merken sich keinen Wert, sondern greifen auf dieselbe Variable zu.
+Nach dem letzten Durchlauf steht `i` auf 5; beim Klick liest der Callback
+`navButtons[5]` — es gibt nur 0 bis 4 — und erhält `undefined`.
+`undefined.getAttribute(...)` wirft.
+
+Mit `let i` bekommt jeder Durchlauf seine eigene Bindung, die der jeweilige
+Callback festhält. Der Bug ist damit nicht behoben, sondern **von vornherein
+unmöglich**.
+
+Diese Stelle wurde beim Modul-Split in Demo 1 bewusst als einzige nicht
+umgestellt und im Code mit einem Kommentar markiert — sonst wäre der Bug
+verschwunden, bevor ihn jemand gesehen hätte.
+
+### Was ist ein "accidental global"?
+
+Eine Zuweisung ohne Deklarationsschlüsselwort:
+
+```js
+function berechne() {
+  ergebnis = 42;        // kein var/let/const
+}
+```
+
+Im non-strict mode erzeugt JavaScript daraus stillschweigend eine **globale**
+Variable — sie überlebt die Funktion, ist von überall sichtbar und kann
+gleichnamige Variablen anderer Programmteile überschreiben. Kein Fehler, keine
+Warnung. Ein Tippfehler in einem Variablennamen (`ergebniss = 42`) erzeugt auf
+diesem Weg eine zweite Variable, während die eigentliche unverändert bleibt.
+
+**In ES-Modulen** — und die App besteht seit Demo 1 ausschließlich daraus —
+gilt automatisch strict mode. Dieselbe Zeile wirft dann:
+ReferenceError: ergebnis is not defined
+
+Der Fehler tritt sofort und an der richtigen Stelle auf, statt später und
+woanders. Der Modul-Split hat diese Fehlerklasse also nicht nur unwahrscheinlicher
+gemacht, sondern vollständig beseitigt.
+
+Denselben Unterschied habe ich beim Konsolentest zu `state.js` gesehen: In der
+DevTools-Konsole (non-strict) scheiterte `s.allEvidence = []` **lautlos** — der
+Ausdruck gab den zugewiesenen Wert zurück, obwohl nichts passiert war. Derselbe
+Code in einem Modul wirft `TypeError: "allEvidence" is read-only`.
+
+### "Funktioniert" vs. "ist sauber" — ein konkretes Beispiel
+
+`setAttribute("onchange", "renderEvidenceList()")` aus Smell 1. Der Statusfilter
+hat korrekt gefiltert; ein Benutzer hätte nie etwas bemerkt.
+
+**Die realen Kosten der unsauberen Version:**
+
+*Fehlerrauschen.* Bei jeder Filteränderung ein roter Eintrag in der Konsole.
+Wer später einen echten Bug sucht, muss diesen Fehler erst als "bekannt und
+harmlos" einordnen — oder er gewöhnt sich an rote Konsolen und übersieht den
+nächsten echten Fehler. Beides kostet Zeit.
+
+*Bug-Risiko bei der nächsten Änderung.* Zwei konkurrierende Mechanismen auf
+demselben Element. Entfernt jemand den `addEventListener` in der Annahme, das
+`onchange`-Attribut übernehme die Arbeit, ist der Filter tot — und die
+Fehlersuche führt zu einer Zeile, die seit Monaten unverändert im Code steht.
+
+*Einarbeitungszeit.* Ein neuer Entwickler sieht zwei Zeilen, die dasselbe tun
+sollen, und muss herausfinden, ob das Absicht ist. Diese Frage kostet ihn ein
+paar Minuten und im Zweifel eine Rückfrage — multipliziert mit jeder solchen
+Stelle im Projekt.
+
+*Review-Aufwand.* Eine Codeänderung an dieser Stelle zwingt den Reviewer, beide
+Mechanismen im Kopf zu halten, statt nur einen.
+
+Der Aufwand für den Fix war eine gelöschte Zeile.
