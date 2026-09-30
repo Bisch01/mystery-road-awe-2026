@@ -13,7 +13,7 @@ import {
   renderEvidenceList,
   handleSearchInput,
   handleSortChange,
-  clearFilters
+  clearFilters,
 } from "./views/evidence.js";
 import { switchPeopleTab } from "./views/people.js";
 import { renderTimeline } from "./views/timeline.js";
@@ -22,7 +22,6 @@ import { saveHypothesis } from "./views/workspace.js";
 function setupEventListeners() {
   window.addEventListener("hashchange", handleHashChange);
 
-  
   const navButtons = document.querySelectorAll(".nav-btn");
   for (let i = 0; i < navButtons.length; i++) {
     navButtons[i].addEventListener("click", function () {
@@ -62,7 +61,6 @@ function setupEventListeners() {
   document.getElementById("filterLocation").addEventListener("change", renderEvidenceList);
 
   document.getElementById("filterStatus").addEventListener("change", renderEvidenceList);
- 
 
   document.getElementById("filterRelevance").addEventListener("change", renderEvidenceList);
 

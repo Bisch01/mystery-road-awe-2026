@@ -1,14 +1,14 @@
 # CHANGES.md — Exercise 1 (Project ReMotion)
 
 Laufende Notiz zu allen Änderungen. Ergänzung zu den Commits: die Commits zeigen
-*was* sich geändert hat, diese Datei *warum* und *wie reproduziert*.
+_was_ sich geändert hat, diese Datei _warum_ und _wie reproduziert_.
 
 Referenzpunkte:
 
-| Tag | Bedeutung |
-|---|---|
+| Tag              | Bedeutung                      |
+| ---------------- | ------------------------------ |
 | `original-state` | Ausgangszustand des Professors |
-| `demo-1-done` | nach dem Modul-Split |
+| `demo-1-done`    | nach dem Modul-Split           |
 
 ```bash
 git diff original-state HEAD --stat            # Überblick
@@ -39,21 +39,21 @@ Wird etwas von **mehreren** Modulen gebraucht, ist es geteilt; wird es von genau
 
 ### Ergebnis: 13 Module
 
-| Modul | Zuständigkeit | Außenwelt |
-|---|---|---|
-| `js/state.js` | geteilter Anwendungszustand + Setter | keine |
-| `js/utils.js` | Lookups nach ID, Datumsformat, Badge-CSS-Klassen | keine |
-| `js/storage.js` | Bookmarks und Notizen lesen/schreiben | `localStorage` |
-| `js/api.js` | die fünf JSON-Dateien laden, Lade-Overlay | Netzwerk (`fetch`) |
-| `js/navigation.js` | `navigateTo` (setzt den URL-Hash) | keine |
-| `js/dropdowns.js` | koordiniert die Auswahllisten dreier Views | keine |
-| `js/router.js` | Hash-Routing, View-Umschaltung | DOM |
-| `js/main.js` | Entry Point: Event-Listener, App-Start | DOM |
-| `js/views/dashboard.js` | Fallübersicht, Statistiken, Fortschritt | DOM |
-| `js/views/evidence.js` | Liste, Filter, Suche, Sortierung, Bookmarks, Detail | DOM |
-| `js/views/people.js` | Personen- und Ortskarten, Tab-Umschaltung | DOM |
-| `js/views/timeline.js` | Ereignisliste, Filter, Quick-View-Modal | DOM |
-| `js/views/workspace.js` | Bookmark-Liste, Notizen, Hypothesen-Formular | DOM |
+| Modul                   | Zuständigkeit                                       | Außenwelt          |
+| ----------------------- | --------------------------------------------------- | ------------------ |
+| `js/state.js`           | geteilter Anwendungszustand + Setter                | keine              |
+| `js/utils.js`           | Lookups nach ID, Datumsformat, Badge-CSS-Klassen    | keine              |
+| `js/storage.js`         | Bookmarks und Notizen lesen/schreiben               | `localStorage`     |
+| `js/api.js`             | die fünf JSON-Dateien laden, Lade-Overlay           | Netzwerk (`fetch`) |
+| `js/navigation.js`      | `navigateTo` (setzt den URL-Hash)                   | keine              |
+| `js/dropdowns.js`       | koordiniert die Auswahllisten dreier Views          | keine              |
+| `js/router.js`          | Hash-Routing, View-Umschaltung                      | DOM                |
+| `js/main.js`            | Entry Point: Event-Listener, App-Start              | DOM                |
+| `js/views/dashboard.js` | Fallübersicht, Statistiken, Fortschritt             | DOM                |
+| `js/views/evidence.js`  | Liste, Filter, Suche, Sortierung, Bookmarks, Detail | DOM                |
+| `js/views/people.js`    | Personen- und Ortskarten, Tab-Umschaltung           | DOM                |
+| `js/views/timeline.js`  | Ereignisliste, Filter, Quick-View-Modal             | DOM                |
+| `js/views/workspace.js` | Bookmark-Liste, Notizen, Hypothesen-Formular        | DOM                |
 
 ### Zwei Entscheidungen, die sich erst beim Umsetzen ergaben
 
@@ -72,15 +72,15 @@ koordiniert, gehört in keine dieser drei Views.
 
 Diese Werte werden jeweils nur von einem Modul gebraucht und bleiben dort privat:
 
-| Variable | privat in | Aufrufstellen im Original |
-|---|---|---|
-| `loadingStepsRemaining` | `api.js` | nur in `hideLoadingStep` / `loadAllData` |
-| `evidenceViewLoading` | `views/evidence.js` | nur in `renderEvidenceList` |
-| `selectedEvidence` | `views/evidence.js` | nur in `openEvidenceDetail` / `closeEvidenceDetail` |
-| `latestSearchRequestId` | `views/evidence.js` | nur in `handleSearchInput` |
-| `currentPeopleTab` | `views/people.js` | nur in `switchPeopleTab` |
-| `modalCloseListenerCount` | `views/timeline.js` | nur in `openEvidenceModal` |
-| `STORAGE_KEY_BOOKMARKS`, `STORAGE_KEY_NOTES` | `storage.js` | nur dort |
+| Variable                                     | privat in           | Aufrufstellen im Original                           |
+| -------------------------------------------- | ------------------- | --------------------------------------------------- |
+| `loadingStepsRemaining`                      | `api.js`            | nur in `hideLoadingStep` / `loadAllData`            |
+| `evidenceViewLoading`                        | `views/evidence.js` | nur in `renderEvidenceList`                         |
+| `selectedEvidence`                           | `views/evidence.js` | nur in `openEvidenceDetail` / `closeEvidenceDetail` |
+| `latestSearchRequestId`                      | `views/evidence.js` | nur in `handleSearchInput`                          |
+| `currentPeopleTab`                           | `views/people.js`   | nur in `switchPeopleTab`                            |
+| `modalCloseListenerCount`                    | `views/timeline.js` | nur in `openEvidenceModal`                          |
+| `STORAGE_KEY_BOOKMARKS`, `STORAGE_KEY_NOTES` | `storage.js`        | nur dort                                            |
 
 Grenzfall, den reines Hinschauen falsch beantwortet hätte: `viewRendered` sieht
 nach einer reinen Router-Angelegenheit aus, wird aber auch in der
@@ -90,14 +90,14 @@ nach Gefühl entscheiden.
 
 ### Bewusst privat gehalten (kein `export`)
 
-| Modul | privat | Begründung |
-|---|---|---|
-| `api.js` | 6 von 7 Funktionen: `showLoadingOverlay`, `hideLoadingStep`, `loadCorePeopleAndLocations`, `loadEvidenceData`, `loadTimelineData` | Die Funktionen bilden zusammen einen Ablauf mit dem Countdown `loadingStepsRemaining`. Könnte man Teile von außen aufrufen, wäre der Zähler nicht mehr verlässlich. Nach außen gibt es genau einen Einstiegspunkt: `loadAllData`. |
-| `views/dashboard.js` | `statCardHTML` | reiner HTML-Baustein |
-| `views/evidence.js` | 12 von 20: `getFilteredEvidence`, `renderEvidenceCardHTML`, `handleEvidenceListClick`, `handleBookmarkClick`, `closeEvidenceDetail`, `renderEvidenceDetail`, `statusOptionHTML`, `saveCurrentNote`, `simulateAsyncSearch` u.a. | Innereien der Liste bzw. der Detailansicht; nach außen zeigt die grösste Datei nur 8 Namen |
-| `views/people.js` | `countEvidenceForPerson` | Hilfszähler nur für die Personenkarten |
-| `views/timeline.js` | `certaintyBadgeClass`, `openEvidenceModal` | das Modal wird nur aus der Timeline geöffnet |
-| `views/workspace.js` | `renderBookmarksList`, `renderNotesList`, `loadHypothesisFromStorage`, `getSelectedOptions` | Teile von `renderWorkspace` |
+| Modul                | privat                                                                                                                                                                                                                         | Begründung                                                                                                                                                                                                                        |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api.js`             | 6 von 7 Funktionen: `showLoadingOverlay`, `hideLoadingStep`, `loadCorePeopleAndLocations`, `loadEvidenceData`, `loadTimelineData`                                                                                              | Die Funktionen bilden zusammen einen Ablauf mit dem Countdown `loadingStepsRemaining`. Könnte man Teile von außen aufrufen, wäre der Zähler nicht mehr verlässlich. Nach außen gibt es genau einen Einstiegspunkt: `loadAllData`. |
+| `views/dashboard.js` | `statCardHTML`                                                                                                                                                                                                                 | reiner HTML-Baustein                                                                                                                                                                                                              |
+| `views/evidence.js`  | 12 von 20: `getFilteredEvidence`, `renderEvidenceCardHTML`, `handleEvidenceListClick`, `handleBookmarkClick`, `closeEvidenceDetail`, `renderEvidenceDetail`, `statusOptionHTML`, `saveCurrentNote`, `simulateAsyncSearch` u.a. | Innereien der Liste bzw. der Detailansicht; nach außen zeigt die grösste Datei nur 8 Namen                                                                                                                                        |
+| `views/people.js`    | `countEvidenceForPerson`                                                                                                                                                                                                       | Hilfszähler nur für die Personenkarten                                                                                                                                                                                            |
+| `views/timeline.js`  | `certaintyBadgeClass`, `openEvidenceModal`                                                                                                                                                                                     | das Modal wird nur aus der Timeline geöffnet                                                                                                                                                                                      |
+| `views/workspace.js` | `renderBookmarksList`, `renderNotesList`, `loadHypothesisFromStorage`, `getSelectedOptions`                                                                                                                                    | Teile von `renderWorkspace`                                                                                                                                                                                                       |
 
 ### Ein bewusster Kompromiss
 
@@ -137,8 +137,8 @@ Nicht in `index.html`, sondern von `renderEvidenceDetail` zur Laufzeit per
 `innerHTML` erzeugt:
 
 ```js
-'<button ... onclick="closeEvidenceDetail()">Close</button>'
-'<button ... onclick="saveCurrentNote()">Save note</button>'
+'<button ... onclick="closeEvidenceDetail()">Close</button>';
+'<button ... onclick="saveCurrentNote()">Save note</button>';
 ```
 
 Durch Textsuche im HTML nicht findbar — nur durch Testen der Detailansicht.
@@ -147,7 +147,7 @@ Umgestellt auf `id="closeEvidenceDetailBtn"` / `id="saveNoteBtn"` plus
 
 ### Verifikation (reiner Refactor)
 
-Ein `git diff` allein genügt hier nicht: die Anordnung *soll* sich ändern.
+Ein `git diff` allein genügt hier nicht: die Anordnung _soll_ sich ändern.
 Geprüft wurde das Verhalten.
 
 1. Alle Textkonstanten der neuen Module gegen `app.js` abgeglichen — eine
@@ -155,15 +155,15 @@ Geprüft wurde das Verhalten.
    in `formatDate`.
 2. Beide Versionen im Browser durchgeklickt und verglichen:
 
-| | Original | nach dem Split |
-|---|---|---|
-| Dashboard | 18 Evidence, 6 People, 6 Locations, 0 Bookmarked, 1 Reviewed | identisch |
-| alle 5 Views erreichbar | ja | ja |
-| Personenkarten | 6 | 6 |
-| Locations-Tab | funktioniert | funktioniert |
-| Evidence-Karten | **0** | **0** |
-| Konsole | `First note preview: Promise` | identisch |
-| Konsole | 6× `getAttribute`-Fehler | identisch |
+|                         | Original                                                     | nach dem Split |
+| ----------------------- | ------------------------------------------------------------ | -------------- |
+| Dashboard               | 18 Evidence, 6 People, 6 Locations, 0 Bookmarked, 1 Reviewed | identisch      |
+| alle 5 Views erreichbar | ja                                                           | ja             |
+| Personenkarten          | 6                                                            | 6              |
+| Locations-Tab           | funktioniert                                                 | funktioniert   |
+| Evidence-Karten         | **0**                                                        | **0**          |
+| Konsole                 | `First note preview: Promise`                                | identisch      |
+| Konsole                 | 6× `getAttribute`-Fehler                                     | identisch      |
 
 Die 0 Evidence-Karten und die Konsolenfehler sind **erwünscht** — sie sind Bugs
 des Originals und beweisen, dass in Demo 1 nichts repariert wurde.
@@ -181,19 +181,19 @@ Im Code als Kommentar markiert.
 
 ### Gefundene, absichtlich NICHT behobene Auffälligkeiten
 
-| Fund | Datei | vorgesehen für |
-|---|---|---|
-| `evidenceViewLoading` wird auf `true` gesetzt und nie zurück → `renderEvidenceList` bricht immer sofort ab, Liste bleibt leer | `views/evidence.js` | Demo 5 |
-| `setFilteredEvidence(allEvidence)` — beide Namen zeigen auf dasselbe Array, keine Kopie | `api.js` | Demo 2 |
-| `loadNoteAsync` verpackt einen sofort verfügbaren Wert in ein Promise; der Aufrufer in `initApp` packt es nicht aus → Konsole zeigt `Promise {}` | `storage.js` | Demo 3 / 4 |
-| `var i` in der Nav-Schleife → Callback greift auf `navButtons[5]` zu → `TypeError` bei jedem Nav-Klick, ohne sichtbare Folge | `main.js` | Demo 4 + 8 |
-| Countdown `loadingStepsRemaining = 2`, aber drei Ladevorgänge; `loadEvidenceData` meldet sich nicht ab | `api.js` | Demo 5 |
-| Drei `catch`-Blöcke mit drei verschiedenen Reaktionen: `console.error` + `alert`, `console.log`, gar nichts | `api.js` | Demo 5 / 8 |
-| `res.json()` ohne `res.ok`-Prüfung → bei 404 wird die Fehlerseite als JSON geparst | `api.js` | Demo 7 |
-| `loadNotesFromStorage` ohne `try/catch`, `loadBookmarksFromStorage` mit → kaputte Notizen im Speicher lassen den Start abstürzen, kaputte Bookmarks nicht | `storage.js` | Demo 7 |
-| `evidenceMentionsPerson` sucht in `personIds` zusätzlich nach `person.name`, obwohl dort nur IDs stehen | `utils.js` | Demo 5 / 8 |
-| `selectedEvidence` und `currentPeopleTab` werden gesetzt, aber nie gelesen | evidence / people | Demo 8 |
-| `setAttribute("onchange", "renderEvidenceList()")` auf `#filterStatus`, obwohl direkt darüber schon ein Listener hängt | `main.js` | Demo 8 |
+| Fund                                                                                                                                                      | Datei               | vorgesehen für |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | -------------- |
+| `evidenceViewLoading` wird auf `true` gesetzt und nie zurück → `renderEvidenceList` bricht immer sofort ab, Liste bleibt leer                             | `views/evidence.js` | Demo 5         |
+| `setFilteredEvidence(allEvidence)` — beide Namen zeigen auf dasselbe Array, keine Kopie                                                                   | `api.js`            | Demo 2         |
+| `loadNoteAsync` verpackt einen sofort verfügbaren Wert in ein Promise; der Aufrufer in `initApp` packt es nicht aus → Konsole zeigt `Promise {}`          | `storage.js`        | Demo 3 / 4     |
+| `var i` in der Nav-Schleife → Callback greift auf `navButtons[5]` zu → `TypeError` bei jedem Nav-Klick, ohne sichtbare Folge                              | `main.js`           | Demo 4 + 8     |
+| Countdown `loadingStepsRemaining = 2`, aber drei Ladevorgänge; `loadEvidenceData` meldet sich nicht ab                                                    | `api.js`            | Demo 5         |
+| Drei `catch`-Blöcke mit drei verschiedenen Reaktionen: `console.error` + `alert`, `console.log`, gar nichts                                               | `api.js`            | Demo 5 / 8     |
+| `res.json()` ohne `res.ok`-Prüfung → bei 404 wird die Fehlerseite als JSON geparst                                                                        | `api.js`            | Demo 7         |
+| `loadNotesFromStorage` ohne `try/catch`, `loadBookmarksFromStorage` mit → kaputte Notizen im Speicher lassen den Start abstürzen, kaputte Bookmarks nicht | `storage.js`        | Demo 7         |
+| `evidenceMentionsPerson` sucht in `personIds` zusätzlich nach `person.name`, obwohl dort nur IDs stehen                                                   | `utils.js`          | Demo 5 / 8     |
+| `selectedEvidence` und `currentPeopleTab` werden gesetzt, aber nie gelesen                                                                                | evidence / people   | Demo 8         |
+| `setAttribute("onchange", "renderEvidenceList()")` auf `#filterStatus`, obwohl direkt darüber schon ein Listener hängt                                    | `main.js`           | Demo 8         |
 
 ### Commits
 
@@ -220,7 +220,7 @@ Vier Unterschiede, die diese App betreffen:
    -Funktionen am globalen Objekt ab. Ein Modul hat seinen eigenen Scope; nichts
    ist von außen sichtbar außer über `export`. Genau deshalb sind alle 13
    Inline-Handler in `index.html` kaputtgegangen.
-2. **Ausführungszeitpunkt.** Module sind automatisch *deferred*: sie laufen erst,
+2. **Ausführungszeitpunkt.** Module sind automatisch _deferred_: sie laufen erst,
    wenn das HTML fertig geparst ist. Ein klassisches Script an derselben Stelle
    läuft sofort.
 3. **Strict mode.** Module laufen immer im strict mode, ohne `"use strict"`.
@@ -231,7 +231,7 @@ Vier Unterschiede, die diese App betreffen:
 ### `allEvidence` war ein globales `var` — was muss nach dem Split passieren?
 
 **Lesen:** ein explizites `import { allEvidence } from "./state.js"`. Wichtig
-dabei: ein Import ist ein *live binding*, kein Schnappschuss. `utils.js` wird beim
+dabei: ein Import ist ein _live binding_, kein Schnappschuss. `utils.js` wird beim
 Seitenstart geladen, wenn `allEvidence` noch `[]` ist, und sieht später trotzdem
 die geladenen Daten — ohne dass es benachrichtigt werden muss.
 
@@ -241,7 +241,7 @@ Moduls, in dem die Variable deklariert ist.
 
 **Der Fehler, wenn man es vergisst:** in einem Modul
 `TypeError: "allEvidence" is read-only`. In der DevTools-Konsole dagegen
-(non-strict mode) scheitert dieselbe Zuweisung *lautlos* — der Ausdruck gibt den
+(non-strict mode) scheitert dieselbe Zuweisung _lautlos_ — der Ausdruck gibt den
 zugewiesenen Wert zurück, obwohl nichts passiert ist. Beides selbst getestet:
 derselbe Code, einmal harter Fehler, einmal stilles Ignorieren.
 
@@ -250,8 +250,8 @@ statt dass ein Schreibversuch wirkungslos verpufft und der Fehler später woande
 auffällt. Und er erzwingt die Setter — die damit eine vollständige Liste aller
 Stellen sind, an denen der Zustand ersetzt werden kann.
 
-**Ausnahme, die man verstehen muss:** gesperrt ist die *Variable*, nicht der
-*Inhalt*. `viewRendered.dashboard = true` und `notesStore[id] = text` funktionieren
+**Ausnahme, die man verstehen muss:** gesperrt ist die _Variable_, nicht der
+_Inhalt_. `viewRendered.dashboard = true` und `notesStore[id] = text` funktionieren
 ohne Setter, weil sie eine Eigenschaft ändern statt die Variable zu ersetzen.
 Deshalb ist `viewRendered` als `const` exportiert und hat keinen Setter.
 
@@ -275,7 +275,7 @@ die kürzere Schreibweise.
 ### Warum laufen `type="module"`-Scripts nicht über `file://`?
 
 Beides, und aus derselben Wurzel. Modul-Imports werden als CORS-Requests
-ausgeführt; ein `file://`-Dokument hat einen *opaque origin*, der jede
+ausgeführt; ein `file://`-Dokument hat einen _opaque origin_, der jede
 Same-Origin-Prüfung scheitern lässt — der Browser blockiert also bereits den
 Import von `js/state.js`. Dieselbe Regel trifft `fetch("data/case.json")`.
 
@@ -291,10 +291,11 @@ endlos. Keine Fehlermeldung in der Konsole. Das Dashboard zeigt gleichzeitig
 "18 Evidence items" an — die Daten sind also geladen.
 
 **Reproduktion:**
+
 1. App über Live Server öffnen
 2. Auf den Reiter "Evidence" klicken
-→ Erwartet: 18 Evidence-Karten.
-→ Tatsächlich: leere Liste, Lade-Indikator sichtbar, Konsole sauber.
+   → Erwartet: 18 Evidence-Karten.
+   → Tatsächlich: leere Liste, Lade-Indikator sichtbar, Konsole sauber.
 
 **Root Cause:** `evidenceViewLoading` in `js/views/evidence.js` startet als `true`
 und wird nirgends zurückgesetzt. `renderEvidenceList` prüft das Flag als Erstes
@@ -326,6 +327,7 @@ ihn auf `false` geändert, würde der Lade-Indikator nie erscheinen — die Funk
 die das Flag haben soll, wäre entfernt statt repariert.
 
 **Verifiziert:**
+
 - 18 Karten erscheinen, Lade-Indikator verschwindet
 - Dashboard-Zahl (18) und Listenlänge stimmen überein
 - Mit gedrosseltem Netz (DevTools → Netzwerk → Slow 3G) ist der Lade-Indikator
@@ -352,17 +354,18 @@ wegen des Async-Bugs aus Demo 3 überhaupt keine Karten anzeigte. Er wurde erst
 sichtbar, nachdem `evidenceViewLoading` korrekt zurückgesetzt wurde.
 
 **Reproduktion:**
+
 1. App öffnen, Reiter "Evidence"
 2. Reihenfolge der Karten-IDs notieren (E01, E02, E03, …)
 3. Im Sortier-Dropdown (2. Werkzeugzeile) "Title (A–Z)" wählen
 4. Reihenfolge erneut ablesen
-→ Erwartet: alphabetisch nach Titel sortiert.
-→ Tatsächlich: unverändert E01, E02, E03, … Ebenso bei "Oldest first" und
-  "Title (Z–A)". Keine Fehlermeldung in der Konsole.
+   → Erwartet: alphabetisch nach Titel sortiert.
+   → Tatsächlich: unverändert E01, E02, E03, … Ebenso bei "Oldest first" und
+   "Title (Z–A)". Keine Fehlermeldung in der Konsole.
 
 **Root Cause:** Zwei Referenz-Probleme, die zusammenwirken.
 
-*(a) Sortiert wird ein Array, das sofort weggeworfen wird.*
+_(a) Sortiert wird ein Array, das sofort weggeworfen wird._
 
 `handleSortChange` rief `filteredEvidence.sort(...)` auf und danach
 `renderEvidenceList()`. Diese ruft `getFilteredEvidence()`, und dort entsteht mit
@@ -374,7 +377,7 @@ unerreichbar und wird vom Garbage Collector eingesammelt. Gezeichnet wird
 
 Die Sortierung fand also statt, nur am falschen Objekt.
 
-*(b) Beim Laden teilten sich zwei Namen ein Array.*
+_(b) Beim Laden teilten sich zwei Namen ein Array._
 
 In `js/api.js` stand `setFilteredEvidence(allEvidence)` — ohne Kopie. Beide Namen
 zeigten auf dasselbe Array. Solange das gilt, würde jede In-place-Operation auf
@@ -401,10 +404,11 @@ geteilt, wo eine Kopie nötig gewesen wäre.
 
 **Kein Symptom-Patch:** Naheliegend wäre gewesen, in `handleSortChange` eine Kopie
 zu sortieren. Das hätte nichts geändert — auch die Kopie wäre von
-`getFilteredEvidence` überschrieben worden. Entscheidend ist, *welches* Array
+`getFilteredEvidence` überschrieben worden. Entscheidend ist, _welches_ Array
 sortiert wird, nicht ob es eine Kopie ist.
 
 **Verifiziert:**
+
 - Alle vier Optionen ändern die Reihenfolge
 - "Oldest first" ist exakt die Umkehrung von "Newest first", ebenso
   "Title (Z–A)" von "Title (A–Z)"
@@ -430,7 +434,7 @@ sortiert wird, nicht ob es eine Kopie ist.
   dasselbe Array, sodass eine Änderung an einem den anderen mit verändert hätte.
   Dieselbe Eigenschaft der Sprache, zwei entgegengesetzte Fehler.
 
-  Wichtig ist außerdem der Unterschied zwischen *verändern* und *ersetzen*:
+  Wichtig ist außerdem der Unterschied zwischen _verändern_ und _ersetzen_:
   `.sort()` verändert das vorhandene Array in place, `.slice()` und das
   Array-Literal `[]` erzeugen ein neues. Nur bei der ersten Sorte wirkt sich
   etwas auf andere Namen aus, die auf dasselbe Array zeigen.
@@ -460,13 +464,14 @@ at main.js:29
 ```
 
 **Reproduktion:**
+
 1. DevTools öffnen (F12), Tab "Konsole", **bevor** irgendetwas angeklickt wird
 2. Seite neu laden
 3. Auf einen beliebigen Navigationsknopf klicken
-→ Oberfläche: völlig korrekt — die Ansicht wechselt, der Knopf wird markiert,
-  die Inhalte erscheinen.
-→ Konsole: ein TypeError pro Klick. Außerdem fehlt die erwartete Zeile
-  `nav clicked: <view>`.
+   → Oberfläche: völlig korrekt — die Ansicht wechselt, der Knopf wird markiert,
+   die Inhalte erscheinen.
+   → Konsole: ein TypeError pro Klick. Außerdem fehlt die erwartete Zeile
+   `nav clicked: <view>`.
 
 **Verantwortliche Zeilen:** `js/main.js`, in `setupEventListeners`:
 
@@ -500,7 +505,7 @@ Callback festhält.
 **Verifiziert:** Konsole geöffnet, Seite neu geladen, alle fünf Reiter angeklickt.
 Vorher: fünf TypeErrors, keine Log-Zeile. Nachher: kein Fehler, und pro Klick die
 korrekte Zeile `nav clicked: dashboard`, `nav clicked: evidence` usw. Dass jetzt
-der *richtige* Name erscheint, beweist zusätzlich, dass der Callback nun auf den
+der _richtige_ Name erscheint, beweist zusätzlich, dass der Callback nun auf den
 angeklickten Button zugreift und nicht auf `undefined`.
 
 **Anmerkung:** Diese Stelle war seit dem Modul-Split (Demo 1) bewusst mit einem
@@ -572,6 +577,7 @@ Ort zeigen weiterhin keine Location-Zeile.
 ### Bug 5.2 — Workspace zeigt nach einem Reload keine Bookmarks und Notizen
 
 **Reproduktion (DevTools → Netzwerkanalyse → "Regular 3G"):**
+
 1. Evidence-Reiter, ein Beweisstück mit dem Stern markieren
 2. Auf Workspace wechseln → der Eintrag steht unter "Bookmarked Evidence"
 3. F5, während Workspace aktiv ist
@@ -594,6 +600,7 @@ ausschließlich daran hängt, bleibt ein Klick auf den aktiven Reiter wirkungslo
 man kommt aus dem leeren Zustand nicht heraus.
 
 **Fix:**
+
 1. `js/api.js`: in `loadEvidenceData` zusätzlich
    `if (currentPage === "workspace") renderWorkspace();`, analog zu den bereits
    vorhandenen Nachzeichnungen für Evidence und Timeline
@@ -624,11 +631,11 @@ Dashboard bleibt dauerhaft bei 0, die Evidence-Liste leer.
 wird der Ladebildschirm ausgeblendet. Der Zähler stand auf **2**, es gibt aber
 **drei** Ladevorgänge:
 
-| Ladevorgang | meldet sich ab? |
-|---|---|
+| Ladevorgang                  | meldet sich ab?            |
+| ---------------------------- | -------------------------- |
 | `loadCorePeopleAndLocations` | ja, im innersten `.then()` |
-| `loadTimelineData` | ja, im `.finally()` |
-| `loadEvidenceData` | **nein** |
+| `loadTimelineData`           | ja, im `.finally()`        |
+| `loadEvidenceData`           | **nein**                   |
 
 Der Zähler wurde passend zu den zwei vorhandenen Aufrufen gesetzt, statt den
 fehlenden dritten zu ergänzen. Der Ladebildschirm meldet damit "fertig", während
@@ -709,8 +716,7 @@ Zusätzlich behandeln die drei `catch`-Blöcke denselben Fall unterschiedlich:
 `console.error` plus `alert` bei Evidence, nur `console.log` bei der Timeline,
 und in `loadCorePeopleAndLocations` gibt es gar keinen `catch`.
 
-**Bewusst nicht behoben** — Demo 7 fragt nach dem *aktuellen* Verhalten bei einem
-404. Der Fix wäre
+**Bewusst nicht behoben** — Demo 7 fragt nach dem _aktuellen_ Verhalten bei einem 404. Der Fix wäre
 `if (!res.ok) throw new Error("HTTP " + res.status)` vor jedem `res.json()`
 sowie eine einheitliche Fehlerbehandlung.
 
@@ -720,6 +726,7 @@ sowie eine einheitliche Fehlerbehandlung.
 Ursache in einem Satz erklärbar, Fix eine Zeile.
 
 Vorführung:
+
 ```bash
 git checkout demo-4-done    # Zustand vor dem Fix
 # Timeline öffnen -> "Location: [object Object]"
@@ -737,22 +744,23 @@ der Timeline auf, für jedes Ereignis mit hinterlegtem Ort. Keine besondere
 Vorgeschichte, kein Timing, keine gespeicherten Daten nötig.
 
 ### Hat das Beheben eines Bugs einen anderen verändert, aufgedeckt oder
+
 ### versehentlich mitbehoben?
 
 **Ja, zweimal, und beide Male aufdeckend statt behebend.**
 
-*Fall 1 — Demo 3 deckte Demo 2 auf.* Solange `evidenceViewLoading` nie
+_Fall 1 — Demo 3 deckte Demo 2 auf._ Solange `evidenceViewLoading` nie
 zurückgesetzt wurde, verließ `renderEvidenceList` die Funktion sofort mit
 `return`; die Evidence-Ansicht blieb leer. Dadurch war der Sortier-Bug nicht
 auslösbar — bei null Karten gibt es keine Reihenfolge zu beobachten. Erst nach
 dem Demo-3-Fix erschienen die 18 Karten, und beim Durchprobieren der
 Sortier-Optionen zeigte sich, dass keine von ihnen etwas bewirkt. Der zweite
 Bug lag also nicht im selben Code, sondern war schlicht hinter dem ersten
-*versteckt*.
+_versteckt_.
 
-*Fall 2 — Demo 3 deckte 5.2 und 5.3 auf.* Beide betreffen die Reihenfolge, in
+_Fall 2 — Demo 3 deckte 5.2 und 5.3 auf._ Beide betreffen die Reihenfolge, in
 der Daten ankommen und Ansichten gezeichnet werden. Solange die Evidence-Ansicht
-generell leer war, fiel nicht auf, dass sie manchmal *zu spät* gefüllt wird.
+generell leer war, fiel nicht auf, dass sie manchmal _zu spät_ gefüllt wird.
 
 **Beinahe-Fall, bewusst vermieden:** Beim Modul-Split in Demo 1 wurde `var`
 weitgehend durch `let`/`const` ersetzt. Die Schleife in `setupEventListeners`
@@ -774,27 +782,27 @@ dass die bereits behobenen Bugs behoben blieben und keine neuen dazukamen.
 19 Stück, alle im globalen Scope und damit von jeder der 1085 Zeilen les- und
 schreibbar.
 
-| # | Variable | nach dem Split |
-|---|---|---|
-| 1 | `allEvidence` | `state.js`, geteilt |
-| 2 | `filteredEvidence` | `state.js`, geteilt |
-| 3 | `selectedEvidence` | privat in `views/evidence.js` |
-| 4 | `bookmarks` | `state.js`, geteilt |
-| 5 | `currentPage` | `state.js`, geteilt |
-| 6 | `allPeople` | `state.js`, geteilt |
-| 7 | `allLocations` | `state.js`, geteilt |
-| 8 | `allTimeline` | `state.js`, geteilt |
-| 9 | `caseData` | `state.js`, geteilt |
-| 10 | `currentPeopleTab` | privat in `views/people.js` |
-| 11 | `loadingStepsRemaining` | privat in `api.js` |
-| 12 | `evidenceViewLoading` | privat in `views/evidence.js` |
-| 13 | `viewRendered` | `state.js`, geteilt (als `const`) |
-| 14 | `notesStore` | `state.js`, geteilt |
-| 15 | `modalCloseListenerCount` | privat in `views/timeline.js` |
-| 16 | `STORAGE_KEY_BOOKMARKS` | privat in `storage.js` |
-| 17 | `STORAGE_KEY_NOTES` | privat in `storage.js` |
-| 18 | `STORAGE_KEY_HYPOTHESIS` | `storage.js`, exportiert |
-| 19 | `latestSearchRequestId` | privat in `views/evidence.js` |
+| #   | Variable                  | nach dem Split                    |
+| --- | ------------------------- | --------------------------------- |
+| 1   | `allEvidence`             | `state.js`, geteilt               |
+| 2   | `filteredEvidence`        | `state.js`, geteilt               |
+| 3   | `selectedEvidence`        | privat in `views/evidence.js`     |
+| 4   | `bookmarks`               | `state.js`, geteilt               |
+| 5   | `currentPage`             | `state.js`, geteilt               |
+| 6   | `allPeople`               | `state.js`, geteilt               |
+| 7   | `allLocations`            | `state.js`, geteilt               |
+| 8   | `allTimeline`             | `state.js`, geteilt               |
+| 9   | `caseData`                | `state.js`, geteilt               |
+| 10  | `currentPeopleTab`        | privat in `views/people.js`       |
+| 11  | `loadingStepsRemaining`   | privat in `api.js`                |
+| 12  | `evidenceViewLoading`     | privat in `views/evidence.js`     |
+| 13  | `viewRendered`            | `state.js`, geteilt (als `const`) |
+| 14  | `notesStore`              | `state.js`, geteilt               |
+| 15  | `modalCloseListenerCount` | privat in `views/timeline.js`     |
+| 16  | `STORAGE_KEY_BOOKMARKS`   | privat in `storage.js`            |
+| 17  | `STORAGE_KEY_NOTES`       | privat in `storage.js`            |
+| 18  | `STORAGE_KEY_HYPOTHESIS`  | `storage.js`, exportiert          |
+| 19  | `latestSearchRequestId`   | privat in `views/evidence.js`     |
 
 ### Kollisionsrisiko — drei Beispiele
 
@@ -807,7 +815,7 @@ erste stillschweigend. Ab dem ersten Seitenwechsel der Paginierung stünde in
 auswählen. Der Fehler würde in der Navigation sichtbar, die Ursache läge in der
 Paginierung.
 
-*Durch den Modul-Split gelöst:* `currentPage` lebt nur in `state.js`. Ein
+_Durch den Modul-Split gelöst:_ `currentPage` lebt nur in `state.js`. Ein
 Paginierungs-`currentPage` in `views/evidence.js` wäre eine völlig andere
 Variable, auch bei identischem Namen.
 
@@ -817,7 +825,7 @@ Schlimmer: `saveBookmarksToStorage` würde weiterlaufen und den falschen Inhalt
 nach `remotion_bookmarks` schreiben. Der Datenverlust wäre nach dem Reload
 dauerhaft.
 
-*Gelöst:* nur `state.js` deklariert `bookmarks`; nur `storage.js` und
+_Gelöst:_ nur `state.js` deklariert `bookmarks`; nur `storage.js` und
 `views/evidence.js` importieren es, sichtbar an den `import`-Zeilen.
 
 **`loadingStepsRemaining`** zeigt die andere Seite des Problems. Der Name ist
@@ -827,7 +835,7 @@ stand auf 2 statt 3. Solange die Variable global ist, muss man zur Fehlersuche
 die ganze Datei durchsehen; jetzt ist der Suchraum `api.js` mit 110 Zeilen, und
 der Zugriff ist auf drei Funktionen beschränkt, die alle privat sind.
 
-*Was der Modul-Split NICHT löst:* Innerhalb eines Moduls sind geteilte Variablen
+_Was der Modul-Split NICHT löst:_ Innerhalb eines Moduls sind geteilte Variablen
 weiterhin für alle Funktionen dieses Moduls erreichbar. `views/evidence.js` hat
 mit ~360 Zeilen und drei privaten Zustandswerten immer noch eine spürbare
 Angriffsfläche — nur eben eine um den Faktor drei kleinere.
@@ -905,14 +913,14 @@ bleibt, weil dort alle Listener gebündelt sind.
 Für die Vollständigkeit notiert; nicht behoben, weil sie für andere Demos
 gebraucht werden oder über einen reinen Aufräum-Commit hinausgehen:
 
-| Smell | Datei | warum offen |
-|---|---|---|
-| `loadNotesFromStorage` ohne `try/catch`, `loadBookmarksFromStorage` mit | `storage.js` | Live-Vorführung in Demo 7 |
-| `res.json()` ohne `res.ok`-Prüfung, drei unterschiedliche `catch`-Behandlungen | `api.js` | Demo 7 fragt nach dem aktuellen Verhalten |
-| `selectedEvidence` und `currentPeopleTab` werden gesetzt, aber nie gelesen | evidence / people | toter Zustand, reine Aufräumarbeit |
-| `loadNoteForEvidence` und `loadNoteAsync` liefern denselben Wert, einmal synchron, einmal als Promise | `storage.js` | wird in Demo 9 gebraucht |
-| `evidenceMentionsPerson` sucht in `personIds` zusätzlich nach `person.name`, obwohl dort nur IDs stehen | `utils.js` | Verhalten unklar, Änderung wäre kein reines Aufräumen |
-| `renderEvidenceList` registriert bei jedem Aufruf erneut einen Klick-Listener auf dem Container | `views/evidence.js` | Listener häufen sich an; Fix gehört inhaltlich zu einem eigenen Bug |
+| Smell                                                                                                   | Datei               | warum offen                                                         |
+| ------------------------------------------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------- |
+| `loadNotesFromStorage` ohne `try/catch`, `loadBookmarksFromStorage` mit                                 | `storage.js`        | Live-Vorführung in Demo 7                                           |
+| `res.json()` ohne `res.ok`-Prüfung, drei unterschiedliche `catch`-Behandlungen                          | `api.js`            | Demo 7 fragt nach dem aktuellen Verhalten                           |
+| `selectedEvidence` und `currentPeopleTab` werden gesetzt, aber nie gelesen                              | evidence / people   | toter Zustand, reine Aufräumarbeit                                  |
+| `loadNoteForEvidence` und `loadNoteAsync` liefern denselben Wert, einmal synchron, einmal als Promise   | `storage.js`        | wird in Demo 9 gebraucht                                            |
+| `evidenceMentionsPerson` sucht in `personIds` zusätzlich nach `person.name`, obwohl dort nur IDs stehen | `utils.js`          | Verhalten unklar, Änderung wäre kein reines Aufräumen               |
+| `renderEvidenceList` registriert bei jedem Aufruf erneut einen Klick-Listener auf dem Container         | `views/evidence.js` | Listener häufen sich an; Fix gehört inhaltlich zu einem eigenen Bug |
 
 ## Fragen zu Demo 8
 
@@ -924,8 +932,8 @@ block-scoped: sie gelten nur zwischen den geschweiften Klammern, in denen sie
 stehen, also auch pro Schleifendurchlauf einzeln.
 
 **Reassignment:** `var` und `let` erlauben Neuzuweisung, `const` nicht. `const`
-verbietet dabei nur die Neuzuweisung der *Variablen*, nicht die Veränderung des
-*Inhalts*: `const arr = []; arr.push(1)` ist erlaubt, `arr = [1]` nicht.
+verbietet dabei nur die Neuzuweisung der _Variablen_, nicht die Veränderung des
+_Inhalts_: `const arr = []; arr.push(1)` ist erlaubt, `arr = [1]` nicht.
 
 **Hoisting:** `var`-Deklarationen werden an den Funktionsanfang gezogen und mit
 `undefined` vorbelegt — ein Zugriff davor liefert `undefined` statt eines
@@ -938,7 +946,7 @@ Deklaration gesperrt (temporal dead zone); ein Zugriff davor wirft einen
 ```js
 for (var i = 0; i < navButtons.length; i++) {
   navButtons[i].addEventListener("click", function () {
-    var targetView = navButtons[i].getAttribute("data-view");   // i ist 5
+    var targetView = navButtons[i].getAttribute("data-view"); // i ist 5
   });
 }
 ```
@@ -963,7 +971,7 @@ Eine Zuweisung ohne Deklarationsschlüsselwort:
 
 ```js
 function berechne() {
-  ergebnis = 42;        // kein var/let/const
+  ergebnis = 42; // kein var/let/const
 }
 ```
 
@@ -993,26 +1001,25 @@ hat korrekt gefiltert; ein Benutzer hätte nie etwas bemerkt.
 
 **Die realen Kosten der unsauberen Version:**
 
-*Fehlerrauschen.* Bei jeder Filteränderung ein roter Eintrag in der Konsole.
+_Fehlerrauschen._ Bei jeder Filteränderung ein roter Eintrag in der Konsole.
 Wer später einen echten Bug sucht, muss diesen Fehler erst als "bekannt und
 harmlos" einordnen — oder er gewöhnt sich an rote Konsolen und übersieht den
 nächsten echten Fehler. Beides kostet Zeit.
 
-*Bug-Risiko bei der nächsten Änderung.* Zwei konkurrierende Mechanismen auf
+_Bug-Risiko bei der nächsten Änderung._ Zwei konkurrierende Mechanismen auf
 demselben Element. Entfernt jemand den `addEventListener` in der Annahme, das
 `onchange`-Attribut übernehme die Arbeit, ist der Filter tot — und die
 Fehlersuche führt zu einer Zeile, die seit Monaten unverändert im Code steht.
 
-*Einarbeitungszeit.* Ein neuer Entwickler sieht zwei Zeilen, die dasselbe tun
+_Einarbeitungszeit._ Ein neuer Entwickler sieht zwei Zeilen, die dasselbe tun
 sollen, und muss herausfinden, ob das Absicht ist. Diese Frage kostet ihn ein
 paar Minuten und im Zweifel eine Rückfrage — multipliziert mit jeder solchen
 Stelle im Projekt.
 
-*Review-Aufwand.* Eine Codeänderung an dieser Stelle zwingt den Reviewer, beide
+_Review-Aufwand._ Eine Codeänderung an dieser Stelle zwingt den Reviewer, beide
 Mechanismen im Kopf zu halten, statt nur einen.
 
 Der Aufwand für den Fix war eine gelöschte Zeile.
-
 
 ## Demo 9 — Verschachtelte Promises → async/await
 
@@ -1023,6 +1030,7 @@ Inhaltlich nötig ist das nicht; das Parallelisieren bleibt laut Aufgabe einer
 späteren Übung vorbehalten und wurde bewusst nicht gemacht.
 
 **Konvertiert:**
+
 1. `loadCorePeopleAndLocations` — aus sechs Ebenen wird eine gerade Liste
 2. `loadTimelineData` — zeigt alle drei Entsprechungen: `.then` → `try`,
    `.catch` → `catch`, `.finally` → `finally`
@@ -1043,11 +1051,11 @@ Zusätzlich mit Breakpoint auf der ersten `await`-Zeile durchgesteppt.
 
 - **Warum ist die verschachtelte Kette schwerer zu lesen, obwohl beide identisch
   laufen?**
-  Drei Gründe. *Richtung:* Der zeitliche Ablauf ist erst-links-dann-rechts statt
+  Drei Gründe. _Richtung:_ Der zeitliche Ablauf ist erst-links-dann-rechts statt
   von oben nach unten — die Reihenfolge der Ausführung entspricht nicht der
-  Lesereihenfolge. *Rauschen:* Auf zwölf Zeilen fachlichen Code kamen sechs
+  Lesereihenfolge. _Rauschen:_ Auf zwölf Zeilen fachlichen Code kamen sechs
   `function (x) { return ... }`-Hüllen plus die passenden schließenden Klammern;
-  das Verhältnis von Struktur zu Inhalt ist etwa 2:1. *Zuordnung:* Am Ende
+  das Verhältnis von Struktur zu Inhalt ist etwa 2:1. _Zuordnung:_ Am Ende
   stehen sechs schließende Klammerpaare untereinander, und man muss zählen, um zu
   wissen, welches zu welcher Ebene gehört. Beim Einfügen eines vierten Ladeschritts
   hätte man an genau der richtigen Stelle eine weitere Ebene öffnen müssen.
@@ -1067,14 +1075,14 @@ Zusätzlich mit Breakpoint auf der ersten `await`-Zeile durchgesteppt.
   `undefined` zurück. Trotzdem lässt sich `.then()` darauf aufrufen:
 
 ```js
-  loadCorePeopleAndLocations().then(v => console.log("fertig:", v));
-  // → fertig: undefined
+loadCorePeopleAndLocations().then((v) => console.log("fertig:", v));
+// → fertig: undefined
 ```
 
-  Dass `.then()` überhaupt existiert, beweist, dass ein Promise zurückkommt, und
-  `undefined` ist der Wert, mit dem es auflöst. Auch `return 42` in einer
-  `async`-Funktion liefert dem Aufrufer kein `42`, sondern ein Promise, das mit
-  `42` auflöst.
+Dass `.then()` überhaupt existiert, beweist, dass ein Promise zurückkommt, und
+`undefined` ist der Wert, mit dem es auflöst. Auch `return 42` in einer
+`async`-Funktion liefert dem Aufrufer kein `42`, sondern ein Promise, das mit
+`42` auflöst.
 
 - **Das `async/await`-Äquivalent zu `.catch()` — und was ohne passiert.**
   `try/catch` um den `await`-Aufruf herum, wie in `loadTimelineData` umgesetzt.
@@ -1101,35 +1109,35 @@ Zusätzlich mit Breakpoint auf der ersten `await`-Zeile durchgesteppt.
   entfernt:
 
 ```js
-  const caseJson = caseRes.json();   // ohne await
-  setCaseData(caseJson);
+const caseJson = caseRes.json(); // ohne await
+setCaseData(caseJson);
 ```
 
-  `caseJson` ist dann ein **Promise**, kein Objekt. `setCaseData` schreibt das
-  Promise in den Zustand, und `renderDashboard` liest `caseData.title` — das
-  Promise hat keine solche Eigenschaft, also `undefined`. Auf dem Dashboard steht
-  statt des Falltitels der Fallback "Case". Kein Fehler, keine rote Zeile in der
-  Konsole, nur ein falscher Wert.
+`caseJson` ist dann ein **Promise**, kein Objekt. `setCaseData` schreibt das
+Promise in den Zustand, und `renderDashboard` liest `caseData.title` — das
+Promise hat keine solche Eigenschaft, also `undefined`. Auf dem Dashboard steht
+statt des Falltitels der Fallback "Case". Kein Fehler, keine rote Zeile in der
+Konsole, nur ein falscher Wert.
 
-  Das ist genau dieselbe Kategorie wie **Bug 5.4**: `loadNoteAsync("E01")` wurde
-  ohne Auspacken geloggt, und in der Konsole stand `Promise {...}` statt der
-  Notiz. Beide Male wird ein Versprechen auf einen Wert behandelt, als wäre es
-  der Wert. Und beide Male schweigt JavaScript, weil ein Promise ein
-  vollkommen gültiges Objekt ist — der Fehler zeigt sich erst dort, wo jemand
-  eine Eigenschaft erwartet, die es nicht hat.
+Das ist genau dieselbe Kategorie wie **Bug 5.4**: `loadNoteAsync("E01")` wurde
+ohne Auspacken geloggt, und in der Konsole stand `Promise {...}` statt der
+Notiz. Beide Male wird ein Versprechen auf einen Wert behandelt, als wäre es
+der Wert. Und beide Male schweigt JavaScript, weil ein Promise ein
+vollkommen gültiges Objekt ist — der Fehler zeigt sich erst dort, wo jemand
+eine Eigenschaft erwartet, die es nicht hat.
 
 ## Demo 10 — Arrow Functions
 
 **Konvertiert:**
 
-| Funktion | Datei | warum guter Kandidat |
-|---|---|---|
-| `findEvidenceById`, `findPersonById`, `findLocationById` | `utils.js` | for-Schleife → `.find()`, je 6 Zeilen auf 1 |
-| `evidenceMentionsPerson` | `utils.js` | reine Prädikatsfunktion ohne `this` |
-| `getStatusBadgeClass`, `getRelevanceBadgeClass` | `utils.js` | reine Übersetzer |
-| `statCardHTML` | `views/dashboard.js` | ein Ausdruck, implizites return |
-| `certaintyBadgeClass` | `views/timeline.js` | reine Übersetzung |
-| anonymer `input`-Callback | `main.js` | Aufgabe 2 |
+| Funktion                                                 | Datei                | warum guter Kandidat                        |
+| -------------------------------------------------------- | -------------------- | ------------------------------------------- |
+| `findEvidenceById`, `findPersonById`, `findLocationById` | `utils.js`           | for-Schleife → `.find()`, je 6 Zeilen auf 1 |
+| `evidenceMentionsPerson`                                 | `utils.js`           | reine Prädikatsfunktion ohne `this`         |
+| `getStatusBadgeClass`, `getRelevanceBadgeClass`          | `utils.js`           | reine Übersetzer                            |
+| `statCardHTML`                                           | `views/dashboard.js` | ein Ausdruck, implizites return             |
+| `certaintyBadgeClass`                                    | `views/timeline.js`  | reine Übersetzung                           |
+| anonymer `input`-Callback                                | `main.js`            | Aufgabe 2                                   |
 
 **Bewusst nicht konvertiert:** `initApp` und `setupEventListeners` in `main.js`.
 
@@ -1140,7 +1148,7 @@ unbekannter ID gibt weiterhin `null`, nicht `undefined`.
 ### Fragen
 
 - **`this` in Arrow Functions vs. normalen Funktionen.**
-  Eine normale Funktion bekommt ihr eigenes `this`, bestimmt davon, *wie* sie
+  Eine normale Funktion bekommt ihr eigenes `this`, bestimmt davon, _wie_ sie
   aufgerufen wird: als Methode zeigt es auf das Objekt, als Listener auf das
   Element, sonst auf `undefined` (strict mode). Eine Arrow Function hat **kein
   eigenes `this`** — sie übernimmt das der umgebenden Stelle, und zwar dort, wo
@@ -1155,7 +1163,7 @@ unbekannter ID gibt weiterhin `null`, nicht `undefined`.
   vor (`grep -rn "\bthis\b" js/` liefert nur Treffer in Kommentaren und einem
   Platzhaltertext). Es gibt keine Klassen und keine Objektmethoden. Die Umstellung
   war deshalb in dieser Hinsicht gefahrlos — und genau deshalb musste die
-  Begründung für die *nicht* konvertierte Funktion über Hoisting laufen statt
+  Begründung für die _nicht_ konvertierte Funktion über Hoisting laufen statt
   über `this`.
 
 - **Kein `new`, kein eigenes `arguments` — hat das eine Konvertierung verhindert?**
@@ -1166,24 +1174,23 @@ unbekannter ID gibt weiterhin `null`, nicht `undefined`.
 
 - **Hoisting — hat das eine Rolle gespielt? Ja, an zwei Stellen.**
 
-  *Verhindernd:* `main.js` endet mit
+  _Verhindernd:_ `main.js` endet mit
   `window.addEventListener("DOMContentLoaded", initApp);`. Diese Zeile wird
   **während der Modul-Auswertung** ausgeführt. Als Funktionsdeklaration ist
   `initApp` gehoistet und die Position im File egal; als `const`-Arrow wäre die
   Reihenfolge tragend. Nachgewiesen mit einem Minimalbeispiel:
 
   const-Arrow, Referenz oberhalb der Deklaration:
-ReferenceError: Cannot access 'initApp' before initialization
-function-Deklaration, gleiche Anordnung:
-läuft durch
-
+  ReferenceError: Cannot access 'initApp' before initialization
+  function-Deklaration, gleiche Anordnung:
+  läuft durch
 
   Heute steht die Deklaration oberhalb, es würde also auch so funktionieren — aber
   eine spätere Umsortierung der Datei würde den Start der App brechen, und der
   Fehler träte weit entfernt von der eigentlichen Änderung auf. Deshalb bleibt es
   eine Funktionsdeklaration.
 
-  *Toleriert:* `statCardHTML` (dashboard.js) und `certaintyBadgeClass`
+  _Toleriert:_ `statCardHTML` (dashboard.js) und `certaintyBadgeClass`
   (timeline.js) werden jeweils **oberhalb** ihrer Deklaration verwendet — in
   `renderDashboard` bzw. `renderTimeline`. Das funktioniert, weil diese
   Render-Funktionen erst nach der Modul-Auswertung aufgerufen werden und die
@@ -1195,46 +1202,46 @@ läuft durch
 - **Konkretes Before/After, mit Laufzeitunterschied?**
 
 ```js
-  // vorher
-  export function findPersonById(id) {
-    for (let i = 0; i < allPeople.length; i++) {
-      if (allPeople[i].id === id) return allPeople[i];
-    }
-    return null;
+// vorher
+export function findPersonById(id) {
+  for (let i = 0; i < allPeople.length; i++) {
+    if (allPeople[i].id === id) return allPeople[i];
   }
+  return null;
+}
 
-  // nachher
-  export const findPersonById = (id) => allPeople.find((person) => person.id === id) || null;
+// nachher
+export const findPersonById = (id) => allPeople.find((person) => person.id === id) || null;
 ```
 
-  **Verhaltensunterschiede, die es zu beachten gab:**
+**Verhaltensunterschiede, die es zu beachten gab:**
 
-  1. `.find()` liefert bei keinem Treffer `undefined`, die Schleife lieferte
-     `null`. Ohne `|| null` wäre das eine echte Verhaltensänderung gewesen —
-     `null` und `undefined` verhalten sich bei `if (!x)` zwar gleich, aber bei
-     `x === null` nicht. Mit `|| null` ist das Verhalten identisch.
-  2. Die Arrow Function hat kein eigenes `this` und kein `arguments`. Da beides
-     hier nicht benutzt wurde, ohne Folgen.
-  3. Hoisting: siehe oben, an dieser Stelle unkritisch.
+1. `.find()` liefert bei keinem Treffer `undefined`, die Schleife lieferte
+   `null`. Ohne `|| null` wäre das eine echte Verhaltensänderung gewesen —
+   `null` und `undefined` verhalten sich bei `if (!x)` zwar gleich, aber bei
+   `x === null` nicht. Mit `|| null` ist das Verhalten identisch.
+2. Die Arrow Function hat kein eigenes `this` und kein `arguments`. Da beides
+   hier nicht benutzt wurde, ohne Folgen.
+3. Hoisting: siehe oben, an dieser Stelle unkritisch.
 
-  Davon abgesehen ist es reine Lesbarkeit. Die Schleife und `.find()` machen
-  dasselbe; `.find()` bricht ebenfalls beim ersten Treffer ab. Laufzeitmäßig ist
-  kein Unterschied messbar, schon gar nicht bei sechs Personen.
+Davon abgesehen ist es reine Lesbarkeit. Die Schleife und `.find()` machen
+dasselbe; `.find()` bricht ebenfalls beim ersten Treffer ab. Laufzeitmäßig ist
+kein Unterschied messbar, schon gar nicht bei sechs Personen.
 
 - **Vorgeschlagene Team-Regel.**
 
-  *Funktionsdeklarationen* (`function name() {}`) für alles, was auf Modulebene
+  _Funktionsdeklarationen_ (`function name() {}`) für alles, was auf Modulebene
   steht und exportiert oder als Einstiegspunkt dient — also die `render*`-,
   `load*`- und `handle*`-Funktionen. Begründung: sie sind gehoistet, wodurch die
   Reihenfolge im File nie tragend wird, sie erscheinen mit ihrem Namen im Call
   Stack, und sie heben sich optisch von den Hilfsfunktionen ab.
 
-  *Arrow Functions* für Callbacks (`.map`, `.filter`, `.find`, `.sort`,
+  _Arrow Functions_ für Callbacks (`.map`, `.filter`, `.find`, `.sort`,
   `addEventListener`) und für kurze Hilfsfunktionen ohne eigenen Zustand.
   Begründung: weniger Rauschen, implizites return bei Einzeilern, und kein
   eigenes `this` — bei Callbacks genau das gewünschte Verhalten.
 
-  *Nie* eine Arrow Function als Objektmethode oder dort, wo `this` oder
+  _Nie_ eine Arrow Function als Objektmethode oder dort, wo `this` oder
   `arguments` gebraucht wird.
 
   Die Regel lässt sich in einem Satz prüfen: **Steht der Name im Call Stack und

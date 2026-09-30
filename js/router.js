@@ -1,9 +1,7 @@
-
 // HASH ROUTING
 // Entscheidet, welche View sichtbar ist und ob sie neu gezeichnet werden
 // muss. Importiert von allen Views - Views importieren nie den Router
 // (navigateTo liegt deshalb in navigation.js).
-
 
 import { viewRendered, setCurrentPage } from "./state.js";
 import { renderDashboard } from "./views/dashboard.js";

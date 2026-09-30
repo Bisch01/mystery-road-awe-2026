@@ -4,37 +4,41 @@
 // Nach außen gibt es genau einen Einstiegspunkt.
 
 import {
-    currentPage,
-    allEvidence,
-    setCaseData,
-    setAllPeople,
-    setAllLocations,
-    setAllEvidence,
-    setFilteredEvidence,
-    setAllTimeline,
+  currentPage,
+  allEvidence,
+  setCaseData,
+  setAllPeople,
+  setAllLocations,
+  setAllEvidence,
+  setFilteredEvidence,
+  setAllTimeline,
 } from "./state.js";
 import { renderDashboard } from "./views/dashboard.js";
 import { renderTimeline } from "./views/timeline.js";
 import { populateAllDropdowns } from "./dropdowns.js";
-import { renderEvidenceList, applyStoredBookmarkFlags, setEvidenceViewLoading } from "./views/evidence.js";
+import {
+  renderEvidenceList,
+  applyStoredBookmarkFlags,
+  setEvidenceViewLoading,
+} from "./views/evidence.js";
 import { renderWorkspace } from "./views/workspace.js";
 
 let loadingStepsRemaining = 3;
 
-function showLoadingOverlay(msg){
-    const overlay = document.getElementById("loadingOverlay");
-    const text = document.getElementById("loadingText");
-    if(text) text.textContent = msg;
-    if(overlay) overlay.classList.remove("hidden");
+function showLoadingOverlay(msg) {
+  const overlay = document.getElementById("loadingOverlay");
+  const text = document.getElementById("loadingText");
+  if (text) text.textContent = msg;
+  if (overlay) overlay.classList.remove("hidden");
 }
 
 //Overlay ausblenden, wenn alle Lade-Schritte abgeschlossen sind
-function hideLoadingStep(){
-    loadingStepsRemaining--;
-    if(loadingStepsRemaining <= 0){
-        const overlay = document.getElementById("loadingOverlay");
-        if(overlay) overlay.classList.add("hidden");
-    }
+function hideLoadingStep() {
+  loadingStepsRemaining--;
+  if (loadingStepsRemaining <= 0) {
+    const overlay = document.getElementById("loadingOverlay");
+    if (overlay) overlay.classList.add("hidden");
+  }
 }
 
 async function loadCorePeopleAndLocations() {

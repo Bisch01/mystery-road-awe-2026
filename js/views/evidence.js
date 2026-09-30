@@ -1,19 +1,16 @@
-
 // EVIDENCE VIEW (Liste, Filter, Suche, Sortierung, Bookmarks, Detail)
 // Größte View. Privat bleiben: die drei Zustandswerte, die nur hier
 // gebraucht werden, und alle reinen HTML-Bausteine.
 
-
 import {
   allEvidence,
-  filteredEvidence,
   bookmarks,
   currentPage,
   allPeople,
   allLocations,
   viewRendered,
   setFilteredEvidence,
-  setBookmarks
+  setBookmarks,
 } from "../state.js";
 import {
   findEvidenceById,
@@ -22,12 +19,10 @@ import {
   evidenceMentionsPerson,
   formatDate,
   getStatusBadgeClass,
-  getRelevanceBadgeClass
+  getRelevanceBadgeClass,
 } from "../utils.js";
 import { saveBookmarksToStorage, saveNoteForEvidence, loadNoteForEvidence } from "../storage.js";
 
-// nur diese View benutzt sie -> kein export
-let selectedEvidence = null;
 let evidenceViewLoading = true;
 // Setter, damit api.js melden kann, dass die Beweisstücke geladen sind.
 // evidenceViewLoading selbst bleibt privat.
@@ -56,12 +51,20 @@ export function populateEvidenceDropdowns() {
 
   personSelect.innerHTML = '<option value="">All people</option>';
   for (let p = 0; p < allPeople.length; p++) {
-    personSelect.innerHTML += '<option value="' + allPeople[p].id + '">' + allPeople[p].name + "</option>";
+    personSelect.innerHTML +=
+      '<option value="' + allPeople[p].id + '">' + allPeople[p].name + "</option>";
   }
 
   locationSelect.innerHTML = '<option value="">All locations</option>';
   for (let l = 0; l < allLocations.length; l++) {
-    locationSelect.innerHTML += '<option value="' + allLocations[l].id + '">' + allLocations[l].id + " - " + allLocations[l].name + "</option>";
+    locationSelect.innerHTML +=
+      '<option value="' +
+      allLocations[l].id +
+      '">' +
+      allLocations[l].id +
+      " - " +
+      allLocations[l].name +
+      "</option>";
   }
 }
 
@@ -93,7 +96,8 @@ function getFilteredEvidence() {
     }
     if (matches && locationVal && item.locationIds.indexOf(locationVal) === -1) matches = false;
     if (matches && statusVal && (item.status || "").toLowerCase() !== statusVal) matches = false;
-    if (matches && relevanceVal && (item.relevance || "").toLowerCase() !== relevanceVal) matches = false;
+    if (matches && relevanceVal && (item.relevance || "").toLowerCase() !== relevanceVal)
+      matches = false;
 
     if (matches) results.push(item);
   }
@@ -134,16 +138,33 @@ export function renderEvidenceList() {
 function renderEvidenceCardHTML(ev) {
   const isBookmarked = bookmarks.indexOf(ev.id) !== -1;
   let html = '<div class="evidence-card" data-id="' + ev.id + '">';
-  html += '<button class="bookmark-btn ' + (isBookmarked ? "active" : "") + '" data-action="bookmark" data-id="' + ev.id + '" aria-label="Toggle bookmark for ' + ev.title + '"><span class="bookmark-icon">' + (isBookmarked ? "★" : "☆") + "</span></button>";
+  html +=
+    '<button class="bookmark-btn ' +
+    (isBookmarked ? "active" : "") +
+    '" data-action="bookmark" data-id="' +
+    ev.id +
+    '" aria-label="Toggle bookmark for ' +
+    ev.title +
+    '"><span class="bookmark-icon">' +
+    (isBookmarked ? "★" : "☆") +
+    "</span></button>";
   html += "<h3>" + ev.title + "</h3>";
-  html += '<div class="evidence-meta">' + ev.id + " &middot; " + ev.type + " &middot; " + formatDate(ev.timestamp) + "</div>";
+  html +=
+    '<div class="evidence-meta">' +
+    ev.id +
+    " &middot; " +
+    ev.type +
+    " &middot; " +
+    formatDate(ev.timestamp) +
+    "</div>";
   html += '<div class="evidence-summary">' + ev.summary + "</div>";
 
   if (ev.tags.indexOf("critical") !== -1) {
     html += '<span class="badge badge-critical">Critical</span>';
   }
   html += '<span class="badge ' + getStatusBadgeClass(ev.status) + '">' + ev.status + "</span>";
-  html += '<span class="badge ' + getRelevanceBadgeClass(ev.relevance) + '">' + ev.relevance + "</span>";
+  html +=
+    '<span class="badge ' + getRelevanceBadgeClass(ev.relevance) + '">' + ev.relevance + "</span>";
   html += "<div>";
   for (let t = 0; t < ev.tags.length; t++) {
     html += '<span class="tag-chip">' + ev.tags[t] + "</span>";
@@ -178,9 +199,11 @@ function handleBookmarkClick(evidenceId) {
     bookmarks.push(evidenceId);
     ev.bookmarked = true;
   } else {
-    setBookmarks(bookmarks.filter(function (id) {
-      return id !== evidenceId;
-    }));
+    setBookmarks(
+      bookmarks.filter(function (id) {
+        return id !== evidenceId;
+      })
+    );
     ev.bookmarked = false;
   }
   saveBookmarksToStorage();
@@ -246,7 +269,7 @@ export function handleSearchInput(event) {
   const term = event.target.value;
   const requestId = ++latestSearchRequestId;
 
-  simulateAsyncSearch(term).then(function (resolvedTerm) {
+  simulateAsyncSearch(term).then(function (_resolvedTerm) {
     // Only apply this response if nothing newer has been typed meanwhile.
     if (requestId !== latestSearchRequestId) return;
     renderEvidenceList();
@@ -258,7 +281,6 @@ export function handleSearchInput(event) {
 export function openEvidenceDetail(evidenceId) {
   const ev = findEvidenceById(evidenceId);
   if (!ev) return;
-  selectedEvidence = ev;
 
   const section = document.getElementById("evidenceDetailSection");
   section.classList.remove("hidden");
@@ -272,7 +294,6 @@ function closeEvidenceDetail() {
   const section = document.getElementById("evidenceDetailSection");
   section.classList.add("hidden");
   section.innerHTML = "";
-  selectedEvidence = null;
 }
 
 // privat: baut die Detailansicht auf
@@ -301,10 +322,18 @@ function renderEvidenceDetail(ev) {
   let html = "";
   html += '<div class="evidence-detail-header">';
   html += "<div><h2>" + ev.title + "</h2>";
-  html += '<div class="evidence-meta">' + ev.id + " &middot; " + ev.type + " &middot; " + formatDate(ev.timestamp) + "</div></div>";
+  html +=
+    '<div class="evidence-meta">' +
+    ev.id +
+    " &middot; " +
+    ev.type +
+    " &middot; " +
+    formatDate(ev.timestamp) +
+    "</div></div>";
   // war: onclick="closeEvidenceDetail()" -- Inline-Handler laufen im globalen
   // Scope und finden Modul-Funktionen nicht. Jetzt über eine id + Listener.
-  html += '<button type="button" id="closeEvidenceDetailBtn" class="btn btn-secondary btn-small">Close</button>';
+  html +=
+    '<button type="button" id="closeEvidenceDetailBtn" class="btn btn-secondary btn-small">Close</button>';
   html += "</div>";
 
   if (ev.tags.indexOf("critical") !== -1) {
@@ -313,8 +342,12 @@ function renderEvidenceDetail(ev) {
 
   html += '<div class="detail-field"><strong>Summary</strong>' + ev.summary + "</div>";
   html += '<div class="evidence-detail-content">' + ev.content + "</div>";
-  html += '<div class="detail-field"><strong>Related people</strong>' + personNames.join(", ") + "</div>";
-  html += '<div class="detail-field"><strong>Related locations</strong>' + locationNames.join(", ") + "</div>";
+  html +=
+    '<div class="detail-field"><strong>Related people</strong>' + personNames.join(", ") + "</div>";
+  html +=
+    '<div class="detail-field"><strong>Related locations</strong>' +
+    locationNames.join(", ") +
+    "</div>";
   html += '<div class="detail-field"><strong>Tags</strong>' + tagsHtml + "</div>";
 
   html += '<div class="detail-field"><strong>Review status</strong>';
@@ -332,12 +365,21 @@ function renderEvidenceDetail(ev) {
   html += "</select></div>";
 
   html += '<div class="detail-field"><strong>Investigator note</strong>';
-  html += '<textarea id="evidenceNoteInput" class="note-textarea" rows="3" data-evidence-id="' + ev.id + '" placeholder="Add a private note about this evidence...">' + storedNote + "</textarea>";
+  html +=
+    '<textarea id="evidenceNoteInput" class="note-textarea" rows="3" data-evidence-id="' +
+    ev.id +
+    '" placeholder="Add a private note about this evidence...">' +
+    storedNote +
+    "</textarea>";
   // war: onclick="saveCurrentNote()"
-  html += '<button type="button" id="saveNoteBtn" class="btn btn-primary btn-small" style="margin-top:6px;">Save note</button>';
+  html +=
+    '<button type="button" id="saveNoteBtn" class="btn btn-primary btn-small" style="margin-top:6px;">Save note</button>';
   html += "</div>";
 
-  html += '<div class="detail-field"><strong>Note preview</strong><div id="notePreview">' + storedNote + "</div></div>";
+  html +=
+    '<div class="detail-field"><strong>Note preview</strong><div id="notePreview">' +
+    storedNote +
+    "</div></div>";
 
   section.innerHTML = html;
 

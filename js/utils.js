@@ -1,4 +1,4 @@
-import { allEvidence, allPeople, allLocations } from './state.js';
+import { allEvidence, allPeople, allLocations } from "./state.js";
 
 // utils.js importiert nur lesend aus state.js: keine Funktion hier ändert
 // Zustand oder greift auf das DOM zu. Deshalb ist das Modul von überall
@@ -20,10 +20,14 @@ export const findPersonById = (id) => allPeople.find((person) => person.id === i
 export const findLocationById = (id) => allLocations.find((loc) => loc.id === id) || null;
 
 export function formatDate(ts) {
-    if (!ts) return "Unknown date"; //kein Zeitstempfel --> Unknown Date
-    const d = new Date(ts);
-    if (isNaN(d.getTime())) return ts; //Zeitstempel aber unlesbar --> gibt Rohtext zurück
-    return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) + " " + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }); //Format: 1. Jan 2020 12:00, undefined = Browser default locale
+  if (!ts) return "Unknown date"; //kein Zeitstempfel --> Unknown Date
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return ts; //Zeitstempel aber unlesbar --> gibt Rohtext zurück
+  return (
+    d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) +
+    " " +
+    d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
+  ); //Format: 1. Jan 2020 12:00, undefined = Browser default locale
 }
 
 export const evidenceMentionsPerson = (ev, person) => {
@@ -44,4 +48,9 @@ export const getRelevanceBadgeClass = (relevance) => {
   return "badge-unreviewed";
 };
 
-
+// temporär für Demo 4: zwei automatisch behebbare Verstöße
+export function demoFix(items, wanted) {
+  let hit = false;
+  if (items.indexOf(wanted) != -1) hit = true;
+  return hit;
+}

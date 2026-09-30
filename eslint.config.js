@@ -4,7 +4,7 @@
 //
 //   A rule gets an autofixer ONLY when there is exactly one mechanical,
 //   meaning-preserving way to rewrite the violation. If fixing it requires
-//   understanding what the code is trying to do, there is no fixer, on purpose. 
+//   understanding what the code is trying to do, there is no fixer, on purpose.
 //
 // When does running lint:fix actually make sense?
 //   1. Right before a commit, as a habit.
@@ -14,11 +14,11 @@
 //      before review, not `var`->`let` noise.
 //
 // When does it NOT make sense?
-//   1. In CI. Ever. 
+//   1. In CI. Ever.
 //   2. On code you haven't read yet. --fix is safe by rule design, but
 //      "safe" means "meaning-preserving for well-formed code". Always
 //      diff and re-test after running it, don't blindly trust it.
-//   3. As a substitute for actually understanding a warning. 
+//   3. As a substitute for actually understanding a warning.
 // ---------------------------------------------------------------------
 
 import js from "@eslint/js";
@@ -79,6 +79,31 @@ export default tseslint.config(
       // example: function handle(payload: any) { ... }
       // There is no "correct" type ESLint could substitute for `any` -
       "@typescript-eslint/no-explicit-any": "error",
+    },
+  },
+
+  // ---------------------------------------------------------------------
+  // Temporär: der Code liegt bis zur Migration in Demo 5-7 noch als .js vor.
+  // Typbasierte Regeln brauchen ein tsconfig.json und werden hier abgeschaltet.
+  // Dieser Block entfällt, sobald alle Module .ts sind.
+  // ---------------------------------------------------------------------
+  {
+    files: ["**/*.js"],
+    languageOptions: {
+      globals: { ...globals.browser },
+    },
+    rules: {
+      ...tseslint.configs.disableTypeChecked.rules,
+      "no-var": "error",
+      "prefer-const": "error",
+      eqeqeq: ["error", "smart"],
+      // bewusst nur Warnung: reine Stilfrage, 39 Fundstellen, wird bei der
+      // TS-Migration in Demo 7 mit umgestellt. Als "error" wäre die CI dauerhaft rot.
+      "@typescript-eslint/prefer-for-of": "warn",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
     },
   },
 

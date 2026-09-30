@@ -1,18 +1,12 @@
-
 //Es gibt 2 Speicher:
-        //localStorage (Festplatte) Überlebt den Reload, nur Text, langsam
-        //notesStore (Arbeitsspeicher) Weg beim Reload, Echtes Objekt und sofort zugreifbar
+//localStorage (Festplatte) Überlebt den Reload, nur Text, langsam
+//notesStore (Arbeitsspeicher) Weg beim Reload, Echtes Objekt und sofort zugreifbar
 //Trick:
-        //localStorage wird nicht ständig gelesen, beim Start einmal alles rüberkopieren
-        //danach arbeitet die App nur noch im notesStore, und speichert nur bei Änderungen in localStorage
+//localStorage wird nicht ständig gelesen, beim Start einmal alles rüberkopieren
+//danach arbeitet die App nur noch im notesStore, und speichert nur bei Änderungen in localStorage
 
 //imports aus state.js
-import {
-  bookmarks,
-  notesStore,
-  setBookmarks,
-  setNotesStore
-} from "./state.js";
+import { bookmarks, notesStore, setBookmarks, setNotesStore } from "./state.js";
 
 const STORAGE_KEY_BOOKMARKS = "remotion_bookmarks";
 const STORAGE_KEY_NOTES = "remotion_notes";
