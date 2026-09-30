@@ -1,0 +1,28 @@
+{
+  "name": "mystery-road-awe-2026",
+  "version": "1.0.0",
+  "description": "Investigate the failure of an AI-assisted rehabilitation robot.",
+  "type": "module",
+  "private": true,
+  "author": "Matthias Bichler",
+  "license": "UNLICENSED",
+  "keywords": [
+    "awe",
+    "csdc",
+    "vanilla-js",
+    "vite",
+    "typescript"
+  ],
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Bisch01/mystery-road-awe-2026.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Bisch01/mystery-road-awe-2026/issues"
+  },
+  "homepage": "https://github.com/Bisch01/mystery-road-awe-2026#readme",
+  "devDependencies": {
+    "vite": "^8.3.1"
+  }
+}
