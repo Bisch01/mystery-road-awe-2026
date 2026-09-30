@@ -48,9 +48,3 @@ export const getRelevanceBadgeClass = (relevance) => {
   return "badge-unreviewed";
 };
 
-// temporär für Demo 4: zwei automatisch behebbare Verstöße
-export function demoFix(items, wanted) {
-  let hit = false;
-  if (items.indexOf(wanted) != -1) hit = true;
-  return hit;
-}
