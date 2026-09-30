@@ -15,16 +15,18 @@ export const STORAGE_KEY_HYPOTHESIS = "remotion_hypothesis";
 // --- Bookmarks ---
 
 // Speichert die aktuellen Bookmarks im Local Storage
-export function saveBookmarksToStorage() {
+export function saveBookmarksToStorage(): void {
   localStorage.setItem(STORAGE_KEY_BOOKMARKS, JSON.stringify(bookmarks));
 }
 
 // Lädt die Bookmarks aus dem Local Storage und setzt sie in den State
-export function loadBookmarksFromStorage() {
+export function loadBookmarksFromStorage(): void {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_BOOKMARKS);
-    const parsed = raw ? JSON.parse(raw) : [];
-    setBookmarks(Array.isArray(parsed) ? parsed : []);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    setBookmarks(
+      Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : []
+    );
   } catch (err) {
     console.warn("Could not read stored bookmarks, starting empty", err);
     setBookmarks([]);
@@ -34,30 +36,30 @@ export function loadBookmarksFromStorage() {
 // --- Notizen ---
 
 // Speichert eine Notiz für ein bestimmtes Beweisstück im notesStore (Arbeitsspeicher) und im Local Storage
-export function saveNoteForEvidence(evidenceId, text) {
+export function saveNoteForEvidence(evidenceId: string, text: string): void {
   notesStore[evidenceId] = text;
   localStorage.setItem(STORAGE_KEY_NOTES, JSON.stringify(notesStore));
 }
 
 // Lädt eine Notiz für ein bestimmtes Beweisstück aus dem notesStore (Arbeitsspeicher)
-export function loadNoteForEvidence(evidenceId) {
-  return notesStore[evidenceId] || "";
+export function loadNoteForEvidence(evidenceId: string): string {
+  return notesStore[evidenceId] ?? "";
 }
 
 // Lädt alle Notizen aus dem Local Storage und setzt sie in den notesStore (Arbeitsspeicher)
-export function loadNotesFromStorage() {
+export function loadNotesFromStorage(): void {
   const raw = localStorage.getItem(STORAGE_KEY_NOTES);
   if (!raw) {
     setNotesStore({});
     return;
   }
 
-  setNotesStore(JSON.parse(raw));
+  setNotesStore(JSON.parse(raw) as Record<string, string>);
 }
 
 // Lädt eine Notiz für ein bestimmtes Beweisstück asynchron aus dem notesStore (Arbeitsspeicher)
-export function loadNoteAsync(evidenceId) {
-  return new Promise(function (resolve) {
-    resolve(notesStore[evidenceId] || "");
+export function loadNoteAsync(evidenceId: string): Promise<string> {
+  return new Promise<string>(function (resolve) {
+    resolve(notesStore[evidenceId] ?? "");
   });
 }
