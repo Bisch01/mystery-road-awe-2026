@@ -13,7 +13,9 @@
     "vite",
     "typescript"
   ],
-  "scripts": {},
+  "scripts": {
+    "dev": "vite"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Bisch01/mystery-road-awe-2026.git"
@@ -23,6 +25,7 @@
   },
   "homepage": "https://github.com/Bisch01/mystery-road-awe-2026#readme",
   "devDependencies": {
+    "@rolldown/binding-wasm32-wasi": "^1.2.12",
     "vite": "^8.3.1"
   }
 }
