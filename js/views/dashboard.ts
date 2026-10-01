@@ -33,7 +33,7 @@ export function renderDashboard(): void {
   html += "</div>";
 
   html += '<div class="stat-grid">';
-  html += statCardHTML("achtzehn", "Evidence items");
+  html += statCardHTML(allEvidence.length, "Evidence items");
   html += statCardHTML(allPeople.length, "People");
   html += statCardHTML(allLocations.length, "Locations");
   html += statCardHTML(bookmarks.length, "Bookmarked");
