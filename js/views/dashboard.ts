@@ -10,13 +10,13 @@ import {
 } from "../state.js";
 import { formatDate, getStatusBadgeClass } from "../utils.js";
 
-export function renderDashboard() {
+export function renderDashboard(): void {
   const container = document.getElementById("dashboardContent");
   if (!container) return;
 
   let reviewedCount = 0;
-  for (let i = 0; i < allEvidence.length; i++) {
-    if ((allEvidence[i].status || "").toLowerCase() === "reviewed") reviewedCount++;
+  for (const ev of allEvidence) {
+    if (ev.status === "reviewed") reviewedCount++;
   }
 
   const progressPct =
@@ -24,12 +24,12 @@ export function renderDashboard() {
 
   let html = "";
   html += '<div class="case-summary-card">';
-  html += "<h3>" + (caseData.title || "Case") + "</h3>";
+  html += "<h3>" + (caseData.title ?? "Case") + "</h3>";
   html +=
     '<p><span class="badge badge-flagged">' +
-    (caseData.status || "unknown").toUpperCase() +
+    (caseData.status ?? "unknown").toUpperCase() +
     "</span></p>";
-  html += "<p>" + (caseData.summary || "") + "</p>";
+  html += "<p>" + (caseData.summary ?? "") + "</p>";
   html += "</div>";
 
   html += '<div class="stat-grid">';
@@ -56,8 +56,7 @@ export function renderDashboard() {
   if (recentEvidence.length === 0) {
     html += "<p>No evidence loaded yet.</p>";
   }
-  for (let e = 0; e < recentEvidence.length; e++) {
-    const ev = recentEvidence[e];
+  for (const ev of recentEvidence) {
     html +=
       '<div class="mini-list-item"><strong>' +
       ev.id +
@@ -76,8 +75,7 @@ export function renderDashboard() {
   if (recentTimeline.length === 0) {
     html += "<p>No timeline events loaded yet.</p>";
   }
-  for (let t = 0; t < recentTimeline.length; t++) {
-    const evt = recentTimeline[t];
+  for (const evt of recentTimeline) {
     html +=
       '<div class="mini-list-item"><strong>' +
       formatDate(evt.time) +
@@ -94,7 +92,7 @@ export function renderDashboard() {
 
 // privat: reiner HTML-Baustein, nur renderDashboard braucht ihn
 // Demo 10: Arrow Function mit implizitem return -- ein einzelner Ausdruck
-const statCardHTML = (value, label) =>
+const statCardHTML = (value: number, label: string): string =>
   '<div class="stat-card"><div class="stat-value">' +
   value +
   '</div><div class="stat-label">' +

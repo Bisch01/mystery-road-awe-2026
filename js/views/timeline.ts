@@ -4,64 +4,62 @@ import { allTimeline, allPeople, allLocations } from "../state.js";
 import { findLocationById, findEvidenceById, formatDate } from "../utils.js";
 import { navigateTo } from "../navigation.js";
 import { openEvidenceDetail } from "./evidence.js";
+import { asElement, getSelect } from "../dom.js";
+import type { Certainty, TimelineEvent } from "../types.js";
 
 // nur diese View benutzt es -> kein export
 let modalCloseListenerCount = 0;
 
-export function populateTimelineDropdowns() {
-  const personSelect = document.getElementById("timelinePersonFilter");
-  const locationSelect = document.getElementById("timelineLocationFilter");
-  const typeSelect = document.getElementById("timelineTypeFilter");
+export function populateTimelineDropdowns(): void {
+  const personSelect = getSelect("timelinePersonFilter");
+  const locationSelect = getSelect("timelineLocationFilter");
+  const typeSelect = getSelect("timelineTypeFilter");
   if (!personSelect || !locationSelect || !typeSelect) return;
 
   personSelect.innerHTML = '<option value="">All people</option>';
-  for (let p = 0; p < allPeople.length; p++) {
-    personSelect.innerHTML +=
-      '<option value="' + allPeople[p].id + '">' + allPeople[p].name + "</option>";
+  for (const person of allPeople) {
+    personSelect.innerHTML += '<option value="' + person.id + '">' + person.name + "</option>";
   }
 
   locationSelect.innerHTML = '<option value="">All locations</option>';
-  for (let l = 0; l < allLocations.length; l++) {
-    locationSelect.innerHTML +=
-      '<option value="' + allLocations[l].id + '">' + allLocations[l].id + "</option>";
+  for (const loc of allLocations) {
+    locationSelect.innerHTML += '<option value="' + loc.id + '">' + loc.id + "</option>";
   }
 
-  const types = [];
-  for (let i = 0; i < allTimeline.length; i++) {
-    if (types.indexOf(allTimeline[i].type) === -1) types.push(allTimeline[i].type);
+  const types: string[] = [];
+  for (const evt of allTimeline) {
+    if (!types.includes(evt.type)) types.push(evt.type);
   }
   typeSelect.innerHTML = '<option value="">All event types</option>';
-  for (let t = 0; t < types.length; t++) {
-    typeSelect.innerHTML += '<option value="' + types[t] + '">' + types[t] + "</option>";
+  for (const type of types) {
+    typeSelect.innerHTML += '<option value="' + type + '">' + type + "</option>";
   }
 }
 
-export function renderTimeline() {
+export function renderTimeline(): void {
   const container = document.getElementById("timelineContainer");
   if (!container) return;
 
-  const order = document.getElementById("timelineOrder").value;
-  const personFilter = document.getElementById("timelinePersonFilter").value;
-  const locationFilter = document.getElementById("timelineLocationFilter").value;
-  const typeFilter = document.getElementById("timelineTypeFilter").value;
+  const order = getSelect("timelineOrder")?.value ?? "asc";
+  const personFilter = getSelect("timelinePersonFilter")?.value ?? "";
+  const locationFilter = getSelect("timelineLocationFilter")?.value ?? "";
+  const typeFilter = getSelect("timelineTypeFilter")?.value ?? "";
 
-  let events = [];
-  for (let i = 0; i < allTimeline.length; i++) {
-    const evt = allTimeline[i];
-    if (personFilter && evt.personIds.indexOf(personFilter) === -1) continue;
-    if (locationFilter && evt.locationIds.indexOf(locationFilter) === -1) continue;
+  let events: TimelineEvent[] = [];
+  for (const evt of allTimeline) {
+    if (personFilter && !evt.personIds.includes(personFilter)) continue;
+    if (locationFilter && !evt.locationIds.includes(locationFilter)) continue;
     if (typeFilter && evt.type !== typeFilter) continue;
     events.push(evt);
   }
 
   events = events.slice().sort(function (a, b) {
-    const diff = new Date(a.time) - new Date(b.time);
+    const diff = new Date(a.time).getTime() - new Date(b.time).getTime();
     return order === "desc" ? -diff : diff;
   });
 
   let html = "";
-  for (let e = 0; e < events.length; e++) {
-    const item = events[e];
+  for (const item of events) {
     html += '<div class="timeline-event certainty-' + item.certainty + '">';
     html +=
       '<div class="timeline-time">' +
@@ -74,22 +72,22 @@ export function renderTimeline() {
     html += "<h3>" + item.title + "</h3>";
     html += "<p>" + item.description + "</p>";
 
-    const eventLocationNames = [];
-    for (let el = 0; el < item.locationIds.length; el++) {
-      const evtLoc = findLocationById(item.locationIds[el]);
+    const eventLocationNames: string[] = [];
+    for (const locationId of item.locationIds) {
+      const evtLoc = findLocationById(locationId);
       // evtLoc ist ein Objekt -> in den String muss der lesbare Teil, nicht das Objekt
-      eventLocationNames.push(evtLoc ? evtLoc.id + " - " + evtLoc.name : item.locationIds[el]);
+      eventLocationNames.push(evtLoc ? evtLoc.id + " - " + evtLoc.name : locationId);
     }
     if (eventLocationNames.length > 0) {
       html += '<p class="evidence-meta">Location: ' + eventLocationNames.join(", ") + "</p>";
     }
 
-    for (let ev2 = 0; ev2 < item.evidenceIds.length; ev2++) {
+    for (const evidenceId of item.evidenceIds) {
       html +=
         '<button type="button" class="evidence-link-btn" data-evidence-id="' +
-        item.evidenceIds[ev2] +
+        evidenceId +
         '">View ' +
-        item.evidenceIds[ev2] +
+        evidenceId +
         "</button>";
     }
     html += "</div>";
@@ -100,14 +98,15 @@ export function renderTimeline() {
   container.innerHTML = html;
 
   const linkButtons = container.querySelectorAll(".evidence-link-btn");
-  for (let b = 0; b < linkButtons.length; b++) {
-    linkButtons[b].addEventListener("click", function (e) {
-      openEvidenceModal(e.target.getAttribute("data-evidence-id"));
+  for (const linkButton of linkButtons) {
+    linkButton.addEventListener("click", function (e) {
+      const evidenceId = asElement(e.target)?.getAttribute("data-evidence-id");
+      if (evidenceId) openEvidenceModal(evidenceId);
     });
   }
 }
 
-const certaintyBadgeClass = (certainty) => {
+const certaintyBadgeClass = (certainty: Certainty): string => {
   if (certainty === "confirmed") return "reviewed";
   if (certainty === "contradictory") return "critical";
   if (certainty === "reported") return "flagged";
@@ -115,7 +114,7 @@ const certaintyBadgeClass = (certainty) => {
 };
 
 // privat: wird nur aus renderTimeline heraus geöffnet
-function openEvidenceModal(evidenceId) {
+function openEvidenceModal(evidenceId: string): void {
   const ev = findEvidenceById(evidenceId);
   if (!ev) return;
 
@@ -150,18 +149,22 @@ function openEvidenceModal(evidenceId) {
   modalCloseListenerCount++;
   console.log("modal opened, active close listeners:", modalCloseListenerCount);
 
-  modal.addEventListener("click", function (e) {
+  const modalElement = modal;
+  modalElement.addEventListener("click", function (e) {
+    const target = asElement(e.target);
+    if (!target) return;
     if (
-      e.target.classList.contains("modal-close-btn") ||
-      e.target.classList.contains("modal-backdrop")
+      target.classList.contains("modal-close-btn") ||
+      target.classList.contains("modal-backdrop")
     ) {
-      modal.innerHTML = "";
+      modalElement.innerHTML = "";
     }
-    if (e.target.getAttribute && e.target.getAttribute("data-open-full")) {
-      modal.innerHTML = "";
+    const openFullId = target.getAttribute("data-open-full");
+    if (openFullId) {
+      modalElement.innerHTML = "";
       navigateTo("evidence");
       setTimeout(function () {
-        openEvidenceDetail(e.target.getAttribute("data-open-full"));
+        openEvidenceDetail(openFullId);
       }, 0);
     }
   });

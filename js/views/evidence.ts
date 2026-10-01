@@ -22,82 +22,74 @@ import {
   getRelevanceBadgeClass,
 } from "../utils.js";
 import { saveBookmarksToStorage, saveNoteForEvidence, loadNoteForEvidence } from "../storage.js";
+import { asElement, asInput, asSelect, getInput, getSelect, getTextArea } from "../dom.js";
+import type { Evidence, EvidenceId } from "../types.js";
 
 let evidenceViewLoading = true;
 // Setter, damit api.js melden kann, dass die Beweisstücke geladen sind.
 // evidenceViewLoading selbst bleibt privat.
-export function setEvidenceViewLoading(value) {
+export function setEvidenceViewLoading(value: boolean): void {
   evidenceViewLoading = value;
 }
 let latestSearchRequestId = 0;
 
 // --- Dropdowns ---
 
-export function populateEvidenceDropdowns() {
-  const typeSelect = document.getElementById("filterType");
-  const personSelect = document.getElementById("filterPerson");
-  const locationSelect = document.getElementById("filterLocation");
+export function populateEvidenceDropdowns(): void {
+  const typeSelect = getSelect("filterType");
+  const personSelect = getSelect("filterPerson");
+  const locationSelect = getSelect("filterLocation");
   if (!typeSelect || !personSelect || !locationSelect) return;
 
-  const types = [];
-  for (let i = 0; i < allEvidence.length; i++) {
-    const t = allEvidence[i].type.toLowerCase();
-    if (types.indexOf(t) === -1) types.push(t);
+  const types: string[] = [];
+  for (const ev of allEvidence) {
+    const t = ev.type.toLowerCase();
+    if (!types.includes(t)) types.push(t);
   }
   typeSelect.innerHTML = '<option value="">All types</option>';
-  for (let ti = 0; ti < types.length; ti++) {
-    typeSelect.innerHTML += '<option value="' + types[ti] + '">' + types[ti] + "</option>";
+  for (const type of types) {
+    typeSelect.innerHTML += '<option value="' + type + '">' + type + "</option>";
   }
 
   personSelect.innerHTML = '<option value="">All people</option>';
-  for (let p = 0; p < allPeople.length; p++) {
-    personSelect.innerHTML +=
-      '<option value="' + allPeople[p].id + '">' + allPeople[p].name + "</option>";
+  for (const person of allPeople) {
+    personSelect.innerHTML += '<option value="' + person.id + '">' + person.name + "</option>";
   }
 
   locationSelect.innerHTML = '<option value="">All locations</option>';
-  for (let l = 0; l < allLocations.length; l++) {
+  for (const loc of allLocations) {
     locationSelect.innerHTML +=
-      '<option value="' +
-      allLocations[l].id +
-      '">' +
-      allLocations[l].id +
-      " - " +
-      allLocations[l].name +
-      "</option>";
+      '<option value="' + loc.id + '">' + loc.id + " - " + loc.name + "</option>";
   }
 }
 
 // --- Filtern & Liste ---
 
 // privat: nur renderEvidenceList braucht das Ergebnis
-function getFilteredEvidence() {
-  const searchBox = document.getElementById("evidenceSearch");
-  const searchTerm = searchBox ? searchBox.value.toLowerCase().trim() : "";
-  const typeVal = document.getElementById("filterType").value;
-  const personVal = document.getElementById("filterPerson").value;
-  const locationVal = document.getElementById("filterLocation").value;
-  const statusVal = document.getElementById("filterStatus").value;
-  const relevanceVal = document.getElementById("filterRelevance").value;
+function getFilteredEvidence(): Evidence[] {
+  const searchTerm = getInput("evidenceSearch")?.value.toLowerCase().trim() ?? "";
+  const typeVal = getSelect("filterType")?.value ?? "";
+  const personVal = getSelect("filterPerson")?.value ?? "";
+  const locationVal = getSelect("filterLocation")?.value ?? "";
+  const statusVal = getSelect("filterStatus")?.value ?? "";
+  const relevanceVal = getSelect("filterRelevance")?.value ?? "";
 
-  const results = [];
-  for (let i = 0; i < allEvidence.length; i++) {
-    const item = allEvidence[i];
+  const results: Evidence[] = [];
+  for (const item of allEvidence) {
     let matches = true;
 
     if (searchTerm) {
       const haystack = (item.title + " " + item.summary + " " + item.tags.join(" ")).toLowerCase();
-      if (haystack.indexOf(searchTerm) === -1) matches = false;
+      if (!haystack.includes(searchTerm)) matches = false;
     }
     if (matches && typeVal && item.type.toLowerCase() !== typeVal) matches = false;
     if (matches && personVal) {
       const person = findPersonById(personVal);
       if (!person || !evidenceMentionsPerson(item, person)) matches = false;
     }
-    if (matches && locationVal && item.locationIds.indexOf(locationVal) === -1) matches = false;
-    if (matches && statusVal && (item.status || "").toLowerCase() !== statusVal) matches = false;
-    if (matches && relevanceVal && (item.relevance || "").toLowerCase() !== relevanceVal)
-      matches = false;
+    if (matches && locationVal && !item.locationIds.includes(locationVal)) matches = false;
+    if (matches && statusVal && item.status !== statusVal) matches = false;
+    if (matches && relevanceVal && item.relevance !== relevanceVal) matches = false;
 
     if (matches) results.push(item);
   }
@@ -107,7 +99,7 @@ function getFilteredEvidence() {
   return results;
 }
 
-export function renderEvidenceList() {
+export function renderEvidenceList(): void {
   const container = document.getElementById("evidenceList");
   if (!container) return;
 
@@ -125,8 +117,8 @@ export function renderEvidenceList() {
   if (results.length === 0) {
     html = "<p>No evidence matches the current filters.</p>";
   }
-  for (let i = 0; i < results.length; i++) {
-    html += renderEvidenceCardHTML(results[i]);
+  for (const item of results) {
+    html += renderEvidenceCardHTML(item);
   }
   container.innerHTML = html;
 
@@ -135,8 +127,8 @@ export function renderEvidenceList() {
 }
 
 // privat: HTML-Baustein einer Karte
-function renderEvidenceCardHTML(ev) {
-  const isBookmarked = bookmarks.indexOf(ev.id) !== -1;
+function renderEvidenceCardHTML(ev: Evidence): string {
+  const isBookmarked = bookmarks.includes(ev.id);
   let html = '<div class="evidence-card" data-id="' + ev.id + '">';
   html +=
     '<button class="bookmark-btn ' +
@@ -159,15 +151,15 @@ function renderEvidenceCardHTML(ev) {
     "</div>";
   html += '<div class="evidence-summary">' + ev.summary + "</div>";
 
-  if (ev.tags.indexOf("critical") !== -1) {
+  if (ev.tags.includes("critical")) {
     html += '<span class="badge badge-critical">Critical</span>';
   }
   html += '<span class="badge ' + getStatusBadgeClass(ev.status) + '">' + ev.status + "</span>";
   html +=
     '<span class="badge ' + getRelevanceBadgeClass(ev.relevance) + '">' + ev.relevance + "</span>";
   html += "<div>";
-  for (let t = 0; t < ev.tags.length; t++) {
-    html += '<span class="tag-chip">' + ev.tags[t] + "</span>";
+  for (const tag of ev.tags) {
+    html += '<span class="tag-chip">' + tag + "</span>";
   }
   html += "</div>";
   html += "</div>";
@@ -175,27 +167,30 @@ function renderEvidenceCardHTML(ev) {
 }
 
 // privat: Klick-Verteilung innerhalb der Liste
-function handleEvidenceListClick(event) {
-  const target = event.target;
+function handleEvidenceListClick(event: Event): void {
+  const target = asElement(event.target);
+  if (!target) return;
 
-  if (target.dataset && target.dataset.action === "bookmark") {
+  if (target.dataset.action === "bookmark") {
     event.stopPropagation();
-    handleBookmarkClick(target.dataset.id);
+    const id = target.dataset.id;
+    if (id) handleBookmarkClick(id);
     return;
   }
 
   const card = target.closest(".evidence-card");
-  if (card) {
-    openEvidenceDetail(card.getAttribute("data-id"));
+  const cardId = card?.getAttribute("data-id");
+  if (cardId) {
+    openEvidenceDetail(cardId);
   }
 }
 
 // privat: wird nur aus handleEvidenceListClick gerufen
-function handleBookmarkClick(evidenceId) {
+function handleBookmarkClick(evidenceId: EvidenceId): void {
   const ev = findEvidenceById(evidenceId);
   if (!ev) return;
 
-  if (bookmarks.indexOf(evidenceId) === -1) {
+  if (!bookmarks.includes(evidenceId)) {
     bookmarks.push(evidenceId);
     ev.bookmarked = true;
   } else {
@@ -210,21 +205,21 @@ function handleBookmarkClick(evidenceId) {
   if (currentPage === "evidence") renderEvidenceList();
 }
 
-export function applyStoredBookmarkFlags() {
-  for (let i = 0; i < allEvidence.length; i++) {
-    allEvidence[i].bookmarked = bookmarks.indexOf(allEvidence[i].id) !== -1;
+export function applyStoredBookmarkFlags(): void {
+  for (const ev of allEvidence) {
+    ev.bookmarked = bookmarks.includes(ev.id);
   }
 }
 
-export function handleSortChange() {
+export function handleSortChange(): void {
   // Nur neu zeichnen. Die Sortierung passiert in getFilteredEvidence, weil dort
   // das Array entsteht, das tatsächlich gerendert wird.
   renderEvidenceList();
 }
 
 // privat: sortiert die übergebene Liste in place, nach dem aktuellen Dropdown-Wert
-function sortEvidence(list) {
-  const sortValue = document.getElementById("sortEvidence").value;
+function sortEvidence(list: Evidence[]): Evidence[] {
+  const sortValue = getSelect("sortEvidence")?.value ?? "date-desc";
 
   if (sortValue === "title-asc") {
     list.sort(function (a, b) {
@@ -236,40 +231,46 @@ function sortEvidence(list) {
     });
   } else if (sortValue === "date-asc") {
     list.sort(function (a, b) {
-      return new Date(a.timestamp) - new Date(b.timestamp);
+      return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
     });
   } else {
     list.sort(function (a, b) {
-      return new Date(b.timestamp) - new Date(a.timestamp);
+      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
     });
   }
   return list;
 }
 
-export function clearFilters() {
-  document.getElementById("evidenceSearch").value = "";
-  document.getElementById("filterType").value = "";
-  document.getElementById("filterPerson").value = "";
-  document.getElementById("filterLocation").value = "";
-  document.getElementById("filterStatus").value = "";
-  document.getElementById("filterRelevance").value = "";
+export function clearFilters(): void {
+  const searchBox = getInput("evidenceSearch");
+  if (searchBox) searchBox.value = "";
+  for (const id of [
+    "filterType",
+    "filterPerson",
+    "filterLocation",
+    "filterStatus",
+    "filterRelevance",
+  ]) {
+    const select = getSelect(id);
+    if (select) select.value = "";
+  }
   renderEvidenceList();
 }
 
 // privat: simuliert eine langsame Suche
-function simulateAsyncSearch(term) {
-  return new Promise(function (resolve) {
+function simulateAsyncSearch(term: string): Promise<string> {
+  return new Promise<string>(function (resolve) {
     setTimeout(function () {
       resolve(term);
     }, 300);
   });
 }
 
-export function handleSearchInput(event) {
-  const term = event.target.value;
+export function handleSearchInput(event: Event): void {
+  const term = asInput(event.target)?.value ?? "";
   const requestId = ++latestSearchRequestId;
 
-  simulateAsyncSearch(term).then(function (_resolvedTerm) {
+  void simulateAsyncSearch(term).then(function (_resolvedTerm) {
     // Only apply this response if nothing newer has been typed meanwhile.
     if (requestId !== latestSearchRequestId) return;
     renderEvidenceList();
@@ -278,11 +279,12 @@ export function handleSearchInput(event) {
 
 // --- Detailansicht ---
 
-export function openEvidenceDetail(evidenceId) {
+export function openEvidenceDetail(evidenceId: EvidenceId): void {
   const ev = findEvidenceById(evidenceId);
   if (!ev) return;
 
   const section = document.getElementById("evidenceDetailSection");
+  if (!section) return;
   section.classList.remove("hidden");
 
   renderEvidenceDetail(ev);
@@ -290,31 +292,33 @@ export function openEvidenceDetail(evidenceId) {
 }
 
 // privat: nur der Close-Button in der Detailansicht ruft das
-function closeEvidenceDetail() {
+function closeEvidenceDetail(): void {
   const section = document.getElementById("evidenceDetailSection");
+  if (!section) return;
   section.classList.add("hidden");
   section.innerHTML = "";
 }
 
 // privat: baut die Detailansicht auf
-function renderEvidenceDetail(ev) {
+function renderEvidenceDetail(ev: Evidence): void {
   const section = document.getElementById("evidenceDetailSection");
+  if (!section) return;
 
-  const personNames = [];
-  for (let p = 0; p < ev.personIds.length; p++) {
-    const person = findPersonById(ev.personIds[p]);
-    personNames.push(person ? person.name : ev.personIds[p]);
+  const personNames: string[] = [];
+  for (const personId of ev.personIds) {
+    const person = findPersonById(personId);
+    personNames.push(person ? person.name : personId);
   }
 
-  const locationNames = [];
-  for (let l = 0; l < ev.locationIds.length; l++) {
-    const loc = findLocationById(ev.locationIds[l]);
-    locationNames.push(loc ? loc.id + " - " + loc.name : ev.locationIds[l]);
+  const locationNames: string[] = [];
+  for (const locationId of ev.locationIds) {
+    const loc = findLocationById(locationId);
+    locationNames.push(loc ? loc.id + " - " + loc.name : locationId);
   }
 
   let tagsHtml = "";
-  for (let t = 0; t < ev.tags.length; t++) {
-    tagsHtml += '<span class="tag-chip">' + ev.tags[t] + "</span>";
+  for (const tag of ev.tags) {
+    tagsHtml += '<span class="tag-chip">' + tag + "</span>";
   }
 
   const storedNote = loadNoteForEvidence(ev.id);
@@ -336,7 +340,7 @@ function renderEvidenceDetail(ev) {
     '<button type="button" id="closeEvidenceDetailBtn" class="btn btn-secondary btn-small">Close</button>';
   html += "</div>";
 
-  if (ev.tags.indexOf("critical") !== -1) {
+  if (ev.tags.includes("critical")) {
     html += '<div class="warning-banner">This item is tagged as critical evidence.</div>';
   }
 
@@ -383,33 +387,42 @@ function renderEvidenceDetail(ev) {
 
   section.innerHTML = html;
 
-  document.getElementById("closeEvidenceDetailBtn").addEventListener("click", closeEvidenceDetail);
-  document.getElementById("saveNoteBtn").addEventListener("click", saveCurrentNote);
+  document.getElementById("closeEvidenceDetailBtn")?.addEventListener("click", closeEvidenceDetail);
+  document.getElementById("saveNoteBtn")?.addEventListener("click", saveCurrentNote);
 
-  document.getElementById("detailStatusSelect").addEventListener("change", function (e) {
-    ev.status = e.target.value; // direct mutation of the loaded evidence object
-    renderEvidenceDetail(ev);
-    if (viewRendered.evidence) renderEvidenceList();
+  document.getElementById("detailStatusSelect")?.addEventListener("change", function (e) {
+    const value = asSelect(e.target)?.value;
+    // Der Compiler kennt nur "string". Dass im Select genau die drei erlaubten
+    // Werte stehen, muss hier ausdrücklich geprüft werden.
+    if (value === "unreviewed" || value === "reviewed" || value === "flagged") {
+      ev.status = value; // direct mutation of the loaded evidence object
+      renderEvidenceDetail(ev);
+      if (viewRendered.evidence) renderEvidenceList();
+    }
   });
-  document.getElementById("detailRelevanceSelect").addEventListener("change", function (e) {
-    ev.relevance = e.target.value;
-    renderEvidenceDetail(ev);
-    if (viewRendered.evidence) renderEvidenceList();
+  document.getElementById("detailRelevanceSelect")?.addEventListener("change", function (e) {
+    const value = asSelect(e.target)?.value;
+    if (value === "unknown" || value === "relevant" || value === "irrelevant") {
+      ev.relevance = value;
+      renderEvidenceDetail(ev);
+      if (viewRendered.evidence) renderEvidenceList();
+    }
   });
 }
 
 // privat: HTML-Baustein für eine <option>
-function statusOptionHTML(current, value, label) {
-  const currentLower = (current || "").toLowerCase();
+function statusOptionHTML(current: string, value: string, label: string): string {
+  const currentLower = current.toLowerCase();
   const selected = currentLower === value ? " selected" : "";
   return '<option value="' + value + '"' + selected + ">" + label + "</option>";
 }
 
 // privat: nur der Save-Button in der Detailansicht ruft das
-function saveCurrentNote() {
-  const textarea = document.getElementById("evidenceNoteInput");
+function saveCurrentNote(): void {
+  const textarea = getTextArea("evidenceNoteInput");
   if (!textarea) return;
   const evidenceId = textarea.getAttribute("data-evidence-id"); // note id is read back off the DOM
+  if (!evidenceId) return;
   const text = textarea.value;
   saveNoteForEvidence(evidenceId, text);
   const preview = document.getElementById("notePreview");
