@@ -10,25 +10,25 @@ import { renderPeople, renderLocations } from "./views/people.js";
 import { renderTimeline } from "./views/timeline.js";
 import { renderWorkspace } from "./views/workspace.js";
 
-export function handleHashChange() {
+export function handleHashChange(): void {
   let hash = window.location.hash.replace("#", "");
   const validViews = ["dashboard", "evidence", "people", "timeline", "workspace"];
-  if (validViews.indexOf(hash) === -1) {
+  if (!validViews.includes(hash)) {
     hash = "dashboard";
   }
   setCurrentPage(hash);
 
   const sections = document.querySelectorAll(".view");
-  for (let i = 0; i < sections.length; i++) {
-    sections[i].classList.remove("active");
+  for (const section of sections) {
+    section.classList.remove("active");
   }
-  document.getElementById("view-" + hash).classList.add("active");
+  document.getElementById("view-" + hash)?.classList.add("active");
 
   const navButtons = document.querySelectorAll(".nav-btn");
-  for (let n = 0; n < navButtons.length; n++) {
-    navButtons[n].classList.remove("active");
-    if (navButtons[n].getAttribute("data-view") === hash) {
-      navButtons[n].classList.add("active");
+  for (const navButton of navButtons) {
+    navButton.classList.remove("active");
+    if (navButton.getAttribute("data-view") === hash) {
+      navButton.classList.add("active");
     }
   }
 
