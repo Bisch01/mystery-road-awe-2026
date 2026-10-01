@@ -41,7 +41,7 @@ export function renderDashboard(): void {
   html += "</div>";
 
   html += '<div class="dashboard-panel">';
-  html += "<h3>Review progress</h3>";
+  html += "<h3>Review progress (deployed automatically)</h3>";
   html +=
     '<div class="progress-bar-outer"><div class="progress-bar-inner" style="width:' +
     progressPct +
