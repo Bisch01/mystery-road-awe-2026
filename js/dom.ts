@@ -32,3 +32,10 @@ export function asInput(target: EventTarget | null): HTMLInputElement | null {
 export function asElement(target: EventTarget | null): HTMLElement | null {
   return target instanceof HTMLElement ? target : null;
 }
+
+
+// temporär für Demo 8: verletzt die Regel no-var
+export function ciDemo(): boolean {
+  var broken = true;
+  return broken;
+}
