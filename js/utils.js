@@ -47,4 +47,3 @@ export const getRelevanceBadgeClass = (relevance) => {
   if (r === "relevant") return "badge-relevant";
   return "badge-unreviewed";
 };
-
