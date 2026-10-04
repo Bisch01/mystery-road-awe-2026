@@ -34,7 +34,7 @@ export default tseslint.config(
   ...tseslint.configs.stylisticTypeChecked,
 
   {
-    files: ["**/*.ts"],
+    files: ["**/*.ts", "**/*.tsx"],
     languageOptions: {
       globals: { ...globals.browser },
       parserOptions: {

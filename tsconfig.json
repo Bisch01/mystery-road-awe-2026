@@ -17,7 +17,8 @@
 
     "allowJs": true,
     "checkJs": false,
-    "noEmit": true
+    "noEmit": true,
+    "jsx": "react-jsx"
   },
   "include": ["js"]
 }

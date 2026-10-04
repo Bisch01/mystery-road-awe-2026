@@ -842,3 +842,24 @@ a:focus-visible {
     display: block;
   }
 }
+
+/* --- Umschaltung Vanilla <-> React (Migration, Exercise 3) ---------------
+   Ohne ?react=1 ist der React-Mountpunkt unsichtbar, mit ?react=1 wird
+   stattdessen die komplette Vanilla-Oberfläche ausgeblendet. So ändern
+   nie beide Varianten dieselben DOM-Knoten. */
+body:not(.react-mode) #react-root {
+  display: none;
+}
+
+body.react-mode .app-header,
+body.react-mode #app,
+body.react-mode .app-footer,
+body.react-mode #loadingOverlay {
+  display: none;
+}
+
+.react-shell {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}

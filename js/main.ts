@@ -94,4 +94,11 @@ function initApp(): void {
   });
 }
 
-window.addEventListener("DOMContentLoaded", initApp);
+const useReact = new URLSearchParams(window.location.search).has("react");
+
+if (useReact) {
+  document.body.classList.add("react-mode");
+  void import("./react/mount.js");
+} else {
+  window.addEventListener("DOMContentLoaded", initApp);
+}
