@@ -851,15 +851,21 @@ body:not(.react-mode) #react-root {
   display: none;
 }
 
-body.react-mode .app-header,
-body.react-mode #app,
-body.react-mode .app-footer,
-body.react-mode #loadingOverlay {
+/* Nur die DIREKTEN Kinder von body ausblenden – die React-Variante rendert
+   ihren eigenen .app-header innerhalb von #react-root und soll bleiben. */
+body.react-mode > .app-header,
+body.react-mode > #app,
+body.react-mode > .app-footer,
+body.react-mode > #loadingOverlay {
   display: none;
 }
 
-.react-shell {
-  max-width: 900px;
-  margin: 2rem auto;
-  padding: 0 1rem;
+/* Die Navigation besteht in React aus echten Links statt Buttons. */
+a.nav-btn {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.stub-note {
+  color: var(--color-text-muted);
 }
