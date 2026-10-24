@@ -1,23 +1,21 @@
-import { ROUTES, ROUTE_LABELS, type RouteId } from "../routes.js";
+import { NavLink } from "react-router";
+import { MAIN_NAV } from "../routes.js";
 
-interface MainNavProps {
-  currentRoute: RouteId;
-}
-
-export function MainNav({ currentRoute }: MainNavProps) {
+export function MainNav() {
   return (
     <nav className="main-nav" aria-label="Main navigation">
-      {ROUTES.map((routeId) => (
-        // Echte Links statt <button data-navigate>: damit funktionieren
-        // Strg+Klick, "In neuem Tab öffnen" und "Link kopieren".
-        <a
-          key={routeId}
-          href={`#${routeId}`}
-          className={routeId === currentRoute ? "nav-btn active" : "nav-btn"}
-          aria-current={routeId === currentRoute ? "page" : undefined}
+      {MAIN_NAV.map((item) => (
+        // NavLink statt <a>: der Router setzt die active-Klasse selbst, es gibt
+        // keinen currentRoute-Prop mehr, der durch den Baum gereicht wird.
+        // NavLink vergleicht standardmäßig als Präfix, deshalb bleibt
+        // "People & Locations" auch bei /team/locations markiert.
+        <NavLink
+          key={item.path}
+          to={item.path}
+          className={({ isActive }) => (isActive ? "nav-btn active" : "nav-btn")}
         >
-          {ROUTE_LABELS[routeId]}
-        </a>
+          {item.label}
+        </NavLink>
       ))}
     </nav>
   );

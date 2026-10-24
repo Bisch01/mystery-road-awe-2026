@@ -1,23 +1,36 @@
-// Routen-Definition der React-Variante.
+// Routen-Definition der React-Variante (Exercise 4, Demo 8).
 //
-// Entspricht bewusst dem validViews-Array aus js/router.ts, damit beide
-// Varianten dieselben URLs verstehen und direkt vergleichbar bleiben.
+// Die Pfade stehen hier zentral, damit Router, Navigation und Weiterleitungen
+// dieselbe Quelle benutzen.
 
-export const ROUTES = ["dashboard", "evidence", "people", "timeline", "workspace"] as const;
+export const ROUTE_PATHS = {
+  dashboard: "/dashboard",
+  evidence: "/evidence",
+  team: "/team",
+  people: "/team/people",
+  locations: "/team/locations",
+  timeline: "/timeline",
+  workspace: "/workspace",
+} as const;
 
-export type RouteId = (typeof ROUTES)[number];
+export const DEFAULT_PATH = ROUTE_PATHS.dashboard;
 
-export const DEFAULT_ROUTE: RouteId = "dashboard";
-
-export const ROUTE_LABELS: Record<RouteId, string> = {
-  dashboard: "Dashboard",
-  evidence: "Evidence",
-  people: "People & Locations",
-  timeline: "Timeline",
-  workspace: "Workspace",
-};
-
-// Typwächter: macht aus einem beliebigen String eine RouteId, falls er eine ist.
-export function isRouteId(value: string): value is RouteId {
-  return (ROUTES as readonly string[]).includes(value);
+export interface NavItem {
+  path: string;
+  label: string;
 }
+
+// Hauptnavigation im Kopfbereich.
+export const MAIN_NAV: NavItem[] = [
+  { path: ROUTE_PATHS.dashboard, label: "Dashboard" },
+  { path: ROUTE_PATHS.evidence, label: "Evidence" },
+  { path: ROUTE_PATHS.team, label: "People & Locations" },
+  { path: ROUTE_PATHS.timeline, label: "Timeline" },
+  { path: ROUTE_PATHS.workspace, label: "Workspace" },
+];
+
+// Zweite Navigationsebene innerhalb von /team.
+export const TEAM_TABS: NavItem[] = [
+  { path: ROUTE_PATHS.people, label: "People" },
+  { path: ROUTE_PATHS.locations, label: "Locations" },
+];

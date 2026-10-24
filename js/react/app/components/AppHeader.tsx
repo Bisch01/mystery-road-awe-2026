@@ -1,16 +1,11 @@
 import { MainNav } from "./MainNav.js";
-import type { RouteId } from "../routes.js";
 
 // BASE_URL kommt aus der Vite-Konfiguration (base: "/mystery-road-awe-2026/").
 // In index.html schreibt Vite absolute Pfade selbst um – in .tsx nicht,
 // deshalb hier explizit.
 const logoUrl = `${import.meta.env.BASE_URL}assets/logo/logo.svg`;
 
-interface AppHeaderProps {
-  currentRoute: RouteId;
-}
-
-export function AppHeader({ currentRoute }: AppHeaderProps) {
+export function AppHeader() {
   return (
     <header className="app-header">
       <div className="header-inner">
@@ -23,7 +18,7 @@ export function AppHeader({ currentRoute }: AppHeaderProps) {
             </p>
           </div>
         </div>
-        <MainNav currentRoute={currentRoute} />
+        <MainNav />
       </div>
     </header>
   );

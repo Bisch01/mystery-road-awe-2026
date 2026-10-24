@@ -1,37 +1,20 @@
-// Anwendungsrahmen der React-Variante: Kopfbereich, Navigation, Fußbereich
-// und die Stelle, an der die aktive View gerendert wird.
+// Anwendungsrahmen der React-Variante: Kopfbereich, Navigation, Fußbereich.
+//
+// Demo 8: AppShell wählt die aktive Seite nicht mehr selbst aus. Sie ist
+// Layout-Route und rendert an der Stelle der View ein <Outlet />; welche
+// Kindroute dort landet, entscheidet der Router.
 
-import type { JSX } from "react";
+import { Outlet } from "react-router";
 
 import { AppHeader } from "./components/AppHeader.js";
 import { AppFooter } from "./components/AppFooter.js";
-import { useHashRoute } from "./useHashRoute.js";
-import type { RouteId } from "./routes.js";
-
-import { DashboardPage } from "../features/dashboard/DashboardPage.js";
-import { EvidencePage } from "../features/evidence/EvidencePage.js";
-import { PeoplePage } from "../features/people-locations/PeoplePage.js";
-import { TimelinePage } from "../features/timeline/TimelinePage.js";
-import { WorkspacePage } from "../features/workspace/WorkspacePage.js";
-
-// Routen-Tabelle statt if/else-Kette: eine Route, eine Komponente.
-const PAGES: Record<RouteId, () => JSX.Element> = {
-  dashboard: DashboardPage,
-  evidence: EvidencePage,
-  people: PeoplePage,
-  timeline: TimelinePage,
-  workspace: WorkspacePage,
-};
 
 export function AppShell() {
-  const currentRoute = useHashRoute();
-  const ActivePage = PAGES[currentRoute];
-
   return (
     <>
-      <AppHeader currentRoute={currentRoute} />
+      <AppHeader />
       <main className="app-main">
-        <ActivePage />
+        <Outlet />
       </main>
       <AppFooter />
     </>
