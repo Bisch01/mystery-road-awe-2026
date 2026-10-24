@@ -1,7 +1,10 @@
-// Layout-Hülle mit Überschrift. Nutzt children (Skript Kap. 15.5:
-// Komposition statt fester Props, wenn der Inhalt beliebig sein darf).
+// Dashboard-Panel: Karten-Hülle plus Überschrift.
+// Der Kasten kommt von <Card>, die Überschrift ist die Zutat dieses Features.
+// title bleibt hier und wandert NICHT in Card: sonst müssten PersonCard und
+// LocationCard einen Prop mitschleppen, den sie nie brauchen.
 
 import type { ReactNode } from "react";
+import { Card } from "../../../shared/components/Card.js";
 
 interface PanelProps {
   title: string;
@@ -10,9 +13,9 @@ interface PanelProps {
 
 export function Panel({ title, children }: PanelProps) {
   return (
-    <div className="dashboard-panel">
+    <Card className="dashboard-panel">
       <h3>{title}</h3>
       {children}
-    </div>
+    </Card>
   );
 }

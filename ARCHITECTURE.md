@@ -38,7 +38,6 @@ js/react/
         PersonCard.tsx
         LocationCard.tsx
         PersonAvatar.tsx
-        Card.tsx
     timeline/
       TimelinePage.tsx
       components/
@@ -55,6 +54,7 @@ js/react/
   shared/                       nur, was mehrere Features wirklich nutzen
     components/
       Badge.tsx                 Dashboard + Timeline
+      Card.tsx                  People & Locations + Dashboard
     data/
       useCaseData.ts            alle drei migrierten Seiten
 ```
@@ -101,6 +101,84 @@ Feature benutzte. Sie wurden zurück in ihr Feature verschoben:
 `MetaLine` wurde in Demo 5 neu angelegt und bewusst **nicht** in `shared/`
 abgelegt: sie wird nur innerhalb der Timeline verwendet.
 
+`Card` ist in Demo 7 nach `shared/components/` zurückgewandert – nicht als
+Rücknahme der Regel, sondern als deren Anwendung: ein zweites Feature
+braucht sie jetzt tatsächlich. Siehe nächster Abschnitt.
+
+## Wiederverwendbares UI-Element: `Card` (Demo 7)
+
+`Card` liefert ausschließlich die Karten-Hülle und nimmt keine Daten an:
+
+```tsx
+interface CardProps {
+  className?: string;
+  children: ReactNode;
+}
+```
+
+Verwendet von zwei Features an vier Stellen:
+
+| Aufrufer          | Feature          | `className`         |
+| ----------------- | ---------------- | ------------------- |
+| `PersonCard`      | people-locations | `person-card`       |
+| `LocationCard`    | people-locations | `location-card`     |
+| `Panel`           | dashboard        | `dashboard-panel`   |
+| `CaseSummaryCard` | dashboard        | `case-summary-card` |
+
+**Fest in der Komponente:** das `<div>`, die Basisklasse `card`, die
+Komposition über `children`.
+
+**Variabel über Props:** die Variantenklasse und der komplette Inhalt.
+
+`Panel` braucht zusätzlich eine Überschrift. Diese liegt bewusst **nicht**
+als `title`-Prop in `Card`, sondern in `Panel`, das `Card` umschließt –
+sonst müssten `PersonCard` und `LocationCard` einen Prop mitschleppen, den
+sie nie setzen. Genau so entsteht die von der Aufgabe gemeinte
+„special-cased mess".
+
+Dieselbe Grenze gilt bei `Badge`: `label` und `tone` sind Props, aber die
+Zuordnung, welcher Status welchen Ton ergibt, liegt in `toneForStatus()`
+und `toneForCertainty()` **außerhalb** der Komponente. Sonst müsste `Badge`
+jeden Domänen-Typ des Projekts kennen.
+
+### CSS
+
+Die Dashboard-Varianten tragen jetzt zusätzlich die Klasse `card`. Damit ihr
+eigenes Padding (18px statt 22px) weiterhin gewinnt, gibt es eine Regel mit
+zwei Klassen und damit höherer Spezifität:
+
+```css
+.card.case-summary-card,
+.card.dashboard-panel {
+  padding: 18px;
+  margin-bottom: 18px;
+}
+```
+
+Der alte Block `.case-summary-card, .dashboard-panel { ... }` bleibt stehen,
+weil die Vanilla-Variante diese Kästen ohne `card` rendert
+(`js/views/dashboard.ts`). Die CSS-Doppelung ist also bewusst in Kauf
+genommen und löst sich auf, sobald die Vanilla-Variante entfällt.
+
+### Vergleich mit dem Original
+
+Im ursprünglichen `app.js` (vor Exercise 1) wurde dieselbe Kasten-Hülle
+fünfmal von Hand geschrieben, in vier leicht abweichenden Schreibweisen:
+`renderPeople()` Zeile 663, `renderLocations()` Zeile 699 und
+`renderDashboard()` Zeilen 244, 258, 266, 278. Die Stat-Karten waren in
+`statCardHTML()` ausgelagert, die Karten-Hüllen nicht – es gab also keine
+Regel, sondern Zufall.
+
+Was die Komponente leistet, was der Template-String nicht konnte:
+
+- Öffnendes und schließendes Tag sind strukturell untrennbar; ein
+  vergessenes `</div>` war vorher ein stummer Layout-Fehler
+- `className` ist typisiert und `children` ist Pflicht – `tsc` meldet jeden
+  fehlerhaften Aufruf
+- Eine Änderung der Kasten-Optik betrifft eine Datei statt fünf Stellen
+- `children` sind React-Elemente statt konkatenierter Strings, Text wird
+  escaped statt per `innerHTML` ausgeführt
+
 ## Bekannte Schwächen (Stand Exercise 4)
 
 - `useCaseData()` wird von jeder Seite einzeln aufgerufen. Beim Seitenwechsel
@@ -109,3 +187,5 @@ abgelegt: sie wird nur innerhalb der Timeline verwendet.
 - Die Normalisierung der Evidence-Daten existiert doppelt: in `js/api.ts`
   (Vanilla) und in `shared/data/useCaseData.ts` (React). Sie wandert in ein
   gemeinsames Modul, sobald die Vanilla-Variante entfällt.
+- Die Kasten-Optik ist in `styles.css` doppelt definiert, solange die
+  Vanilla-Variante die Dashboard-Kästen ohne `card` rendert.

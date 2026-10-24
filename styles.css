@@ -605,14 +605,10 @@ a:focus-visible {
   display: none;
 }
 
-.card,
-.person-card,
-.location-card {
-  background: var(--color-panel);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  padding: 22px;
-  box-shadow: var(--shadow);
+.card.case-summary-card,
+.card.dashboard-panel {
+  padding: 18px;
+  margin-bottom: 18px;
 }
 
 .person-card-header {
