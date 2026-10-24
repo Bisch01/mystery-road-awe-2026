@@ -605,6 +605,7 @@ a:focus-visible {
   display: none;
 }
 
+.card,
 .person-card,
 .location-card {
   background: var(--color-panel);
