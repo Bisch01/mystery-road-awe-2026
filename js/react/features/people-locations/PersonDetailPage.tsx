@@ -9,7 +9,7 @@ import { Card } from "../../shared/components/Card.js";
 import { Badge, toneForStatus } from "../../shared/components/Badge.js";
 import { PersonAvatar } from "./components/PersonAvatar.js";
 import { useTeamContext } from "./TeamLayout.js";
-import { ROUTE_PATHS } from "../../app/routes.js";
+import { ROUTE_PATHS, timelineForPerson } from "../../app/routes.js";
 import { evidenceMentionsPerson } from "../../../utils.js";
 
 export function PersonDetailPage() {
@@ -72,6 +72,14 @@ export function PersonDetailPage() {
 
         <p>
           <strong>Background:</strong> {person.background}
+        </p>
+
+        <p>
+          {/* Query-Parameter statt Route-Parameter: die Timeline bleibt
+              dieselbe Seite, nur anders eingestellt (Demo 10). */}
+          <Link className="back-link" to={timelineForPerson(person.id)}>
+            View this person on the timeline &rarr;
+          </Link>
         </p>
 
         <p>

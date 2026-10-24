@@ -40,3 +40,11 @@ export const TEAM_TABS: NavItem[] = [
 export function personPath(personId: string): string {
   return `${ROUTE_PATHS.people}/${personId}`;
 }
+
+/** Name des Query-Parameters, mit dem die Timeline vorgefiltert wird. */
+export const PARAM_PERSON = "person";
+
+/** Baut die Adresse einer nach Person vorgefilterten Timeline. */
+export function timelineForPerson(personId: string): string {
+  return `${ROUTE_PATHS.timeline}?${PARAM_PERSON}=${encodeURIComponent(personId)}`;
+}

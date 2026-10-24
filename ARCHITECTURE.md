@@ -211,6 +211,61 @@ Die Detailseite zeigt zusätzlich `person.background` — ein Feld aus
 die inhaltliche Begründung für die eigene Route: es gibt Daten, die auf der
 Karte keinen Platz haben.
 
+## URL als Zustand: Query-Parameter auf der Timeline (Demo 10)
+
+`/timeline?person=<id>` filtert die Ereignisliste beim ersten Rendern. Gelesen
+wird der Wert mit `useSearchParams()`:
+
+```tsx
+const [searchParams] = useSearchParams();
+const personParam = searchParams.get(PARAM_PERSON) ?? "";
+```
+
+`get()` liefert `string | null`. Es gibt **kein** `useState` für den Filter:
+der Zustand steht in der Adresse und wird bei jedem Rendern neu gelesen, es
+existiert also keine zweite Kopie, die auseinanderlaufen könnte.
+
+Eine unbekannte Kennung wird **verworfen**, nicht als leere Liste dargestellt.
+Das ist die Gegenentscheidung zu `/team/people/:personId`, wo eine unbekannte
+Kennung einen Hinweis erzeugt: dort ist die Kennung die Identität der Seite,
+hier nur eine Einstellung, und eine unbrauchbare Einstellung wird ignoriert.
+
+Pfad- und Query-Parameter im Vergleich, beide im Projekt vorhanden:
+
+|                       | `/team/people/nova-byte` | `/timeline?person=nova-byte` |
+| --------------------- | ------------------------ | ---------------------------- |
+| Bedeutung             | Identität der Seite      | Einstellung der Seite        |
+| ohne den Wert         | andere Seite (Liste)     | dieselbe Seite, ungefiltert  |
+| mehrere Werte möglich | nein                     | ja                           |
+| unbekannter Wert      | Hinweis, kein Inhalt     | Filter verworfen             |
+
+Die Bedienelemente in `TimelineToolbar` sind bewusst `disabled`. Sie zeigen den
+Zustand, den die URL beschreibt, und niemand kann eine Auswahl treffen, die
+wirkungslos bleibt. Verdrahtet werden sie in Exercise 5.
+
+Verlinkt wird aus `PersonDetailPage` über `timelineForPerson(person.id)`.
+
+## Abschluss Exercise 4: Stand der Migration
+
+| View               | Variante | Route                                                       |
+| ------------------ | -------- | ----------------------------------------------------------- |
+| Dashboard          | React    | `/dashboard`                                                |
+| People & Locations | React    | `/team/people`, `/team/locations`, `/team/people/:personId` |
+| Timeline           | React    | `/timeline`, `/timeline?person=<id>`                        |
+| Evidence           | Vanilla  | `/evidence` (Platzhalter, Exercise 5)                       |
+| Workspace          | Vanilla  | `/workspace` (Platzhalter, Exercise 5)                      |
+
+Im gesamten Ordner `js/react/` gibt es **einen** direkten DOM-Zugriff:
+`document.getElementById("react-root")` in `mount.tsx`, also den Mountpunkt
+selbst. Kein `innerHTML`, kein `dangerouslySetInnerHTML`, kein
+`createElement`, kein `classList`, kein `addEventListener`, kein
+`textContent`. Zum Vergleich: die Vanilla-Views enthalten 33 Zuweisungen an
+`innerHTML` (dashboard 1, evidence 11, people 2, timeline 10, workspace 9).
+
+`useState` und `useEffect` kommen an genau einer Stelle vor: in
+`useCaseData()`, wo das asynchrone Laden einen Zustand braucht. Alle anderen
+Komponenten sind Funktionen ihrer Props und der Adresse.
+
 ## Bekannte Schwächen (Stand Exercise 4)
 
 - `useCaseData()` wird von jeder Seite einzeln aufgerufen. Beim Seitenwechsel

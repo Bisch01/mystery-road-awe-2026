@@ -928,3 +928,14 @@ a.nav-btn {
 .person-evidence-list li {
   margin-bottom: 6px;
 }
+
+/* React-Variante, Exercise 4 Demo 10: Hinweiszeile unter der Filter-Leiste */
+.filter-note {
+  margin: -6px 0 14px;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.filter-note a {
+  color: var(--color-header-2);
+}
