@@ -18,7 +18,7 @@ import type {
   Location,
   Person,
   TimelineEvent,
-} from "../../types.js";
+} from "../../../types.js";
 
 const DATA_BASE = `${import.meta.env.BASE_URL}data/`;
 const STORAGE_KEY_BOOKMARKS = "remotion_bookmarks";

@@ -6,7 +6,7 @@
 // Die Filter-Leiste folgt in Demo 10 – dort wird der Anfangszustand aus
 // einem Query-Parameter gelesen. Bis dahin zeigt die View alle Ereignisse.
 
-import { useCaseData } from "../../data/useCaseData.js";
+import { useCaseData } from "../../shared/data/useCaseData.js";
 import { TimelineList } from "./components/TimelineList.js";
 
 export function TimelinePage() {

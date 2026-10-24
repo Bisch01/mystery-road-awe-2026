@@ -1,4 +1,4 @@
-import { Card } from "../../../shared/components/Card.js";
+import { Card } from "./Card.js";
 import type { Location } from "../../../../types.js";
 
 interface LocationCardProps {

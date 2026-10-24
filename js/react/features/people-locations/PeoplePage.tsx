@@ -6,7 +6,7 @@
 // Die Tab-Umschaltung aus der Vanilla-Variante fehlt hier bewusst noch –
 // sie wird in Demo 8 zu zwei echten Routen, nicht zu lokalem State.
 
-import { useCaseData } from "../../data/useCaseData.js";
+import { useCaseData } from "../../shared/data/useCaseData.js";
 import { PersonCard } from "./components/PersonCard.js";
 import { LocationCard } from "./components/LocationCard.js";
 import { evidenceMentionsPerson } from "../../../utils.js";

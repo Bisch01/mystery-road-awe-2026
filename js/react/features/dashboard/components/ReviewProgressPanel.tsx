@@ -1,4 +1,4 @@
-import { Panel } from "../../../shared/components/Panel.js";
+import { Panel } from "./Panel.js";
 
 interface ReviewProgressPanelProps {
   progressPct: number;

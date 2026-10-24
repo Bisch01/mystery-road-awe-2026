@@ -3,7 +3,7 @@
 // Feature-Komponente im Sinne von Kap. 16.3: kennt die Datenquelle, berechnet
 // die abgeleiteten Werte und reicht reine Werte an die Darstellung weiter.
 
-import { useCaseData } from "../../data/useCaseData.js";
+import { useCaseData } from "../../shared/data/useCaseData.js";
 import { CaseSummaryCard } from "./components/CaseSummaryCard.js";
 import { StatGrid } from "./components/StatGrid.js";
 import { ReviewProgressPanel } from "./components/ReviewProgressPanel.js";

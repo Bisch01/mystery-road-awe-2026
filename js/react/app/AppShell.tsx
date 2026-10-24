@@ -10,7 +10,7 @@ import type { RouteId } from "./routes.js";
 
 import { DashboardPage } from "../features/dashboard/DashboardPage.js";
 import { EvidencePage } from "../features/evidence/EvidencePage.js";
-import { PeoplePage } from "../features/people/PeoplePage.js";
+import { PeoplePage } from "../features/people-locations/PeoplePage.js";
 import { TimelinePage } from "../features/timeline/TimelinePage.js";
 import { WorkspacePage } from "../features/workspace/WorkspacePage.js";
 

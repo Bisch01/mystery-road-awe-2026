@@ -1,5 +1,5 @@
-import { Panel } from "../../../shared/components/Panel.js";
-import { MiniListItem } from "../../../shared/components/MiniListItem.js";
+import { Panel } from "./Panel.js";
+import { MiniListItem } from "./MiniListItem.js";
 import { formatDate } from "../../../../utils.js";
 import type { TimelineEvent } from "../../../../types.js";
 

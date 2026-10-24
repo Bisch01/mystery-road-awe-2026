@@ -1,5 +1,5 @@
-import { Panel } from "../../../shared/components/Panel.js";
-import { MiniListItem } from "../../../shared/components/MiniListItem.js";
+import { Panel } from "./Panel.js";
+import { MiniListItem } from "./MiniListItem.js";
 import { Badge, toneForStatus } from "../../../shared/components/Badge.js";
 import type { Evidence } from "../../../../types.js";
 

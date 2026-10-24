@@ -1,4 +1,4 @@
-import { Card } from "../../../shared/components/Card.js";
+import { Card } from "./Card.js";
 import { PersonAvatar } from "./PersonAvatar.js";
 import type { Person } from "../../../../types.js";
 

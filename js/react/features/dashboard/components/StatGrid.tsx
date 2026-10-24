@@ -1,4 +1,4 @@
-import { StatCard } from "../../../shared/components/StatCard.js";
+import { StatCard } from "./StatCard.js";
 
 interface StatGridProps {
   evidenceCount: number;
