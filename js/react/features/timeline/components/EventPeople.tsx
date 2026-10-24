@@ -1,9 +1,10 @@
-// Zeigt die beteiligten Personen eines Ereignisses.
+// Löst die personIds eines Ereignisses zu Namen auf und überlässt die
+// Darstellung MetaLine.
 //
-// Drei der 15 Ereignisse (T11–T13) haben keine personIds. Für die gibt
-// die Komponente null zurück und rendert gar nichts – kein leeres <p>,
-// das Abstand erzeugen würde (Skript Kap. 16.1).
+// Drei der 15 Ereignisse (T11–T13) haben keine personIds. MetaLine gibt
+// dafür null zurück und rendert gar nichts.
 
+import { MetaLine } from "./MetaLine.js";
 import type { Person, PersonId } from "../../../../types.js";
 
 interface EventPeopleProps {
@@ -12,11 +13,7 @@ interface EventPeopleProps {
 }
 
 export function EventPeople({ personIds, people }: EventPeopleProps) {
-  if (personIds.length === 0) {
-    return null;
-  }
-
   const names = personIds.map((id) => people.find((person) => person.id === id)?.name ?? id);
 
-  return <p className="evidence-meta">People: {names.join(", ")}</p>;
+  return <MetaLine label="People" values={names} />;
 }

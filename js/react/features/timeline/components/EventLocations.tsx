@@ -1,9 +1,9 @@
-// Zeigt die Orte eines Zeitstrahl-Ereignisses an.
+// Löst die locationIds eines Ereignisses zu lesbaren Beschriftungen auf
+// und überlässt die Darstellung MetaLine.
 //
-// Hat ein Ereignis keine Orte, gibt die Komponente null zurück und rendert
-// damit GAR NICHTS – kein leeres <p>, das Abstände erzeugen würde.
-// Skript Kap. 16.1: "A component may return null when it should render nothing."
+// Demo 5: Vorher machte diese Datei beides – nachschlagen UND rendern.
 
+import { MetaLine } from "./MetaLine.js";
 import type { Location, LocationId } from "../../../../types.js";
 
 interface EventLocationsProps {
@@ -12,15 +12,11 @@ interface EventLocationsProps {
 }
 
 export function EventLocations({ locationIds, locations }: EventLocationsProps) {
-  if (locationIds.length === 0) {
-    return null;
-  }
-
   const labels = locationIds.map((id) => {
     const match = locations.find((location) => location.id === id);
     // Unbekannte Id: lieber die rohe Id zeigen als die Zeile zu verschlucken.
     return match ? `${match.id} - ${match.name}` : id;
   });
 
-  return <p className="evidence-meta">Location: {labels.join(", ")}</p>;
+  return <MetaLine label="Location" values={labels} />;
 }
