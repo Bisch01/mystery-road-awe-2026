@@ -18,6 +18,7 @@ import { DashboardPage } from "./features/dashboard/DashboardPage.js";
 import { EvidencePage } from "./features/evidence/EvidencePage.js";
 import { TeamLayout } from "./features/people-locations/TeamLayout.js";
 import { PeoplePage } from "./features/people-locations/PeoplePage.js";
+import { PersonDetailPage } from "./features/people-locations/PersonDetailPage.js";
 import { LocationsPage } from "./features/people-locations/LocationsPage.js";
 import { TimelinePage } from "./features/timeline/TimelinePage.js";
 import { WorkspacePage } from "./features/workspace/WorkspacePage.js";
@@ -38,6 +39,7 @@ export function App() {
           <Route path="team" element={<TeamLayout />}>
             <Route index element={<Navigate to="people" replace />} />
             <Route path="people" element={<PeoplePage />} />
+            <Route path="people/:personId" element={<PersonDetailPage />} />
             <Route path="locations" element={<LocationsPage />} />
           </Route>
 

@@ -8,6 +8,7 @@ export const ROUTE_PATHS = {
   evidence: "/evidence",
   team: "/team",
   people: "/team/people",
+  personDetail: "/team/people/:personId",
   locations: "/team/locations",
   timeline: "/timeline",
   workspace: "/workspace",
@@ -34,3 +35,8 @@ export const TEAM_TABS: NavItem[] = [
   { path: ROUTE_PATHS.people, label: "People" },
   { path: ROUTE_PATHS.locations, label: "Locations" },
 ];
+
+/** Baut die konkrete Adresse einer Personenseite, z. B. "/team/people/nova-byte". */
+export function personPath(personId: string): string {
+  return `${ROUTE_PATHS.people}/${personId}`;
+}

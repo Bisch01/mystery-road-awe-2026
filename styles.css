@@ -895,3 +895,36 @@ a.nav-btn {
 .stub-note {
   color: var(--color-text-muted);
 }
+
+/* ---------------------------------------------------------------------
+   React-Variante, Exercise 4 Demo 9: Personen-Detailseite
+   --------------------------------------------------------------------- */
+.back-link {
+  display: inline-block;
+  margin-bottom: 14px;
+  color: var(--color-header-2);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+.person-card h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.person-card h3 a:hover {
+  text-decoration: underline;
+}
+
+.person-evidence-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.person-evidence-list li {
+  margin-bottom: 6px;
+}

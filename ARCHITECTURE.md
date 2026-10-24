@@ -179,6 +179,38 @@ Was die Komponente leistet, was der Template-String nicht konnte:
 - `children` sind React-Elemente statt konkatenierter Strings, Text wird
   escaped statt per `innerHTML` ausgeführt
 
+## Route-Parameter: Personen-Detailseite (Demo 9)
+
+Route: `/team/people/:personId`, Komponente `PersonDetailPage`, als Kindroute
+von `/team` definiert. Dadurch bleiben Tab-Leiste, Überschrift und der
+geladene Datenbestand der Layout-Route `TeamLayout` erhalten.
+
+`useParams()` liefert `Record<string, string | undefined>`. Der Wert ist roher
+Text aus der Adresse, nicht `PersonId` — der Router kennt die Domäne nicht.
+Die Zuordnung zu einem Datensatz passiert in der Komponente:
+
+```tsx
+const { personId } = useParams();
+const person = people.find((candidate) => candidate.id === personId);
+if (!person) {
+  /* Hinweis + Rücklink, bewusst keine Weiterleitung */
+}
+```
+
+Passt die Kennung zu keiner Person, erscheint ein Hinweis mit Rücklink. Es
+wird **nicht** auf `/team/people` umgeleitet, weil sich dieser Fall von der
+Auffangroute `path="*"` unterscheidet: dort existiert die Adressform nicht,
+hier existiert sie und nur der Datensatz fehlt.
+
+Verlinkt wird von `PersonCard`: der Personenname ist ein `<Link>` auf
+`personPath(person.id)`. Die Hilfsfunktion steht neben `ROUTE_PATHS`, damit
+die Pfadform nur an einer Stelle definiert ist.
+
+Die Detailseite zeigt zusätzlich `person.background` — ein Feld aus
+`people.json`, das in der Vanilla-Variante nirgends dargestellt wird. Das ist
+die inhaltliche Begründung für die eigene Route: es gibt Daten, die auf der
+Karte keinen Platz haben.
+
 ## Bekannte Schwächen (Stand Exercise 4)
 
 - `useCaseData()` wird von jeder Seite einzeln aufgerufen. Beim Seitenwechsel

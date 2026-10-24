@@ -1,5 +1,8 @@
+import { Link } from "react-router";
+
 import { Card } from "../../../shared/components/Card.js";
 import { PersonAvatar } from "./PersonAvatar.js";
+import { personPath } from "../../../app/routes.js";
 import type { Person } from "../../../../types.js";
 
 interface PersonCardProps {
@@ -14,7 +17,11 @@ export function PersonCard({ person, relatedEvidenceCount }: PersonCardProps) {
       <div className="person-card-header">
         <PersonAvatar person={person} />
         <div>
-          <h3>{person.name}</h3>
+          <h3>
+            {/* Link statt reinem Text: führt auf die parametrisierte Route
+                /team/people/:personId (Demo 9). */}
+            <Link to={personPath(person.id)}>{person.name}</Link>
+          </h3>
           <div className="person-role">{person.role}</div>
         </div>
       </div>
