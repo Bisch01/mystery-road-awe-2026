@@ -8,7 +8,6 @@
 
 import { useCaseData } from "../../data/useCaseData.js";
 import { TimelineList } from "./components/TimelineList.js";
-import { KeyDemo } from "./KeyDemo.js";
 
 export function TimelinePage() {
   const { status, timeline, locations, people } = useCaseData();
@@ -30,7 +29,6 @@ export function TimelinePage() {
   return (
     <section>
       <h2>Investigation Timeline</h2>
-      <KeyDemo />
       <TimelineList events={eventsByTime} locations={locations} people={people} />
     </section>
   );
