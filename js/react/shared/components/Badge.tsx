@@ -2,7 +2,7 @@
 // timeline.ts sowie die Helfer getStatusBadgeClass/getRelevanceBadgeClass:
 // Markup, Zuordnungslogik und Typisierung liegen jetzt in EINER Einheit.
 
-import type { EvidenceStatus } from "../../../types.js";
+import type { Certainty, EvidenceStatus } from "../../../types.js";
 
 export type BadgeTone = "unreviewed" | "reviewed" | "flagged" | "relevant" | "critical";
 
@@ -19,4 +19,16 @@ export function toneForStatus(status: EvidenceStatus): BadgeTone {
   if (status === "reviewed") return "reviewed";
   if (status === "flagged") return "flagged";
   return "unreviewed";
+}
+
+// Zuordnungs-Tabelle statt if/else-Kette: ersetzt certaintyBadgeClass()
+// aus js/views/timeline.ts.
+const CERTAINTY_TONES: Record<Certainty, BadgeTone> = {
+  confirmed: "reviewed",
+  reported: "flagged",
+  contradictory: "critical",
+};
+
+export function toneForCertainty(certainty: Certainty): BadgeTone {
+  return CERTAINTY_TONES[certainty];
 }
