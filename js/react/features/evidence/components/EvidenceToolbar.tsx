@@ -1,10 +1,13 @@
-// Werkzeugleiste der Beweisliste (Exercise 5, Demo 1).
+// Werkzeugleiste der Beweisliste (Exercise 5, Demo 1 und 2).
 //
-// Das Suchfeld ist verdrahtet: value + onChange, der Zustand liegt in
-// EvidencePage. Die sechs Auswahlfelder sind noch disabled – sie werden in
-// Demo 7 gemeinsam über einen useReducer verdrahtet, weil sie zusammen einen
-// Zustand bilden. Ein disabled Feld zeigt den Zustand an, ohne eine Auswahl
-// anzubieten, die wirkungslos bliebe.
+// Das Suchfeld ist kontrolliert: value + onChange, der Zustand liegt in
+// EvidencePage. Der Knopf "Clear search" ändert nur diesen Zustand – das
+// Eingabefeld folgt, weil sein value daraus kommt (Demo 2).
+//
+// Die sechs Auswahlfelder sind noch disabled: sie werden in Demo 7 gemeinsam
+// über einen useReducer verdrahtet, weil sie zusammen einen Zustand bilden.
+// Ein disabled Feld zeigt den Zustand an, ohne eine Auswahl anzubieten, die
+// wirkungslos bliebe.
 //
 // Die ids tragen ein ev-Präfix, damit sie nicht mit den gleichnamigen
 // Elementen der Vanilla-Variante in index.html kollidieren.
@@ -46,6 +49,19 @@ export function EvidenceToolbar({
             onSearchChange(event.target.value);
           }}
         />
+        {/* Beweis dafür, dass das Feld kontrolliert ist: dieser Knopf steht
+            außerhalb des Eingabefelds und leert es, indem er nur den Zustand
+            ändert. Das DOM wird nicht angefasst (Demo 2). */}
+        <button
+          type="button"
+          className="btn btn-secondary btn-small"
+          disabled={searchTerm === ""}
+          onClick={() => {
+            onSearchChange("");
+          }}
+        >
+          Clear search
+        </button>
 
         <label htmlFor="evType" className="visually-hidden">
           Filter by type
