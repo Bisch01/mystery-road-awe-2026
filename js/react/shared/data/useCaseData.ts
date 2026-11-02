@@ -9,6 +9,11 @@
 // Dashboard-Seite allein.
 
 import { useEffect, useState } from "react";
+
+// Exercise 5, Demo 1: der Leser liegt jetzt im gemeinsamen Modul, weil auch
+// EvidencePage und WorkspacePage ihn brauchen.
+import { readBookmarks } from "./bookmarksStorage.js";
+
 import type {
   CaseData,
   Evidence,
@@ -21,7 +26,6 @@ import type {
 } from "../../../types.js";
 
 const DATA_BASE = `${import.meta.env.BASE_URL}data/`;
-const STORAGE_KEY_BOOKMARKS = "remotion_bookmarks";
 
 // evidence.json hält sich bei status und relevance nicht an die Union-Typen
 // ("Reviewed" statt "reviewed"). Dieselbe Normalisierung wie in api.ts.
@@ -47,16 +51,6 @@ async function fetchJson<T>(file: string): Promise<T> {
   const res = await fetch(DATA_BASE + file);
   if (!res.ok) throw new Error(`${file}: HTTP ${String(res.status)}`);
   return (await res.json()) as T;
-}
-
-function readBookmarks(): EvidenceId[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_BOOKMARKS);
-    const parsed: unknown = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
-  } catch {
-    return [];
-  }
 }
 
 export interface CaseDataState {

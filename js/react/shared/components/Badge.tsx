@@ -2,7 +2,7 @@
 // timeline.ts sowie die Helfer getStatusBadgeClass/getRelevanceBadgeClass:
 // Markup, Zuordnungslogik und Typisierung liegen jetzt in EINER Einheit.
 
-import type { Certainty, EvidenceStatus } from "../../../types.js";
+import type { Certainty, EvidenceRelevance, EvidenceStatus } from "../../../types.js";
 
 export type BadgeTone = "unreviewed" | "reviewed" | "flagged" | "relevant" | "critical";
 
@@ -31,4 +31,17 @@ const CERTAINTY_TONES: Record<Certainty, BadgeTone> = {
 
 export function toneForCertainty(certainty: Certainty): BadgeTone {
   return CERTAINTY_TONES[certainty];
+}
+
+// Ersetzt getRelevanceBadgeClass() aus js/utils.ts. Dort fing ein
+// "else return badge-unreviewed" jeden unbekannten Wert stillschweigend auf;
+// hier erzwingt Record<EvidenceRelevance, BadgeTone> einen Eintrag pro Wert.
+const RELEVANCE_TONES: Record<EvidenceRelevance, BadgeTone> = {
+  relevant: "relevant",
+  irrelevant: "unreviewed",
+  unknown: "unreviewed",
+};
+
+export function toneForRelevance(relevance: EvidenceRelevance): BadgeTone {
+  return RELEVANCE_TONES[relevance];
 }
