@@ -1,4 +1,4 @@
-// Evidence Catalogue (Exercise 5, Demo 1 bis 7).
+// Evidence Catalogue (Exercise 5, Demo 1 bis 8).
 //
 // Feature-Komponente: besitzt den Zustand DIESER Ansicht und leitet die
 // sichtbare Liste daraus ab.
@@ -7,22 +7,26 @@
 // sondern in einem useReducer. Der Reducer selbst steht in evidenceFilters.ts,
 // diese Komponente schickt nur Vorgänge hin.
 //
-// Demo 5: Die Lesezeichen besitzt sie NICHT mehr. Sie kommen samt der
-// Umschaltfunktion aus dem Outlet-Context von AppShell, dem niedrigsten
-// gemeinsamen Vorfahren von Dashboard, Evidence und Workspace.
+// Demo 5: Die Lesezeichen besitzt sie NICHT mehr – der Zustand wanderte zum
+// niedrigsten gemeinsamen Vorfahren.
 //
-// Demo 6: Die Notizen gehören ebenfalls AppShell. Diese Seite reicht nur
-// saveNote an die Detailansicht weiter.
+// Demo 6: Die Notizen gehören AppShell. Diese Seite reicht nur saveNote an
+// die Detailansicht weiter.
+//
+// Demo 8: Die Lesezeichen kommen jetzt aus dem Bookmark-Context. Sie werden
+// hier nur noch für die Hinweiszeile und die Zustandssonde gebraucht – die
+// Liste und die Karten holen sie sich selbst.
 //
 // Zwei der drei migrierten Handler (Demo 1) liegen hier:
 //   - onChange am Suchfeld  (handleFilterChange)
-//   - onClick am Stern      (toggleBookmark aus dem Context)
+//   - onClick am Stern      (liegt seit Demo 8 in BookmarkButton selbst)
 // Der dritte (onSubmit) liegt in features/workspace/components/HypothesisForm.
 
 import { useReducer, useState } from "react";
 
 import { useCaseData } from "../../shared/data/useCaseData.js";
 import { useAppOutlet } from "../../app/AppShell.js";
+import { useBookmarks } from "../../shared/data/BookmarkContext.js";
 import { EvidenceToolbar } from "./components/EvidenceToolbar.js";
 import { EvidenceList } from "./components/EvidenceList.js";
 import { BookmarkStateProbe } from "./components/BookmarkStateProbe.js";
@@ -40,15 +44,10 @@ import type { EvidenceId } from "../../../types.js";
 export function EvidencePage() {
   const { status, evidence, people, locations } = useCaseData();
 
-  // Aus dem Outlet-Context: der Zustand gehört AppShell, nicht dieser Seite.
-  const {
-    bookmarkIds,
-    previousBookmarkIds,
-    toggleBookmark,
-    mutatingToggleBookmark,
-    notes,
-    saveNote,
-  } = useAppOutlet();
+  // Zwei Transportwege nebeneinander: Lesezeichen über Context,
+  // Notizen über den Outlet-Context von AppShell (Demo 8).
+  const { bookmarkIds, previousBookmarkIds, mutatingToggleBookmark } = useBookmarks();
+  const { notes, saveNote } = useAppOutlet();
 
   // ZUSTAND DIESER ANSICHT (Demo 4: Werte, die der Nutzer setzt und die sich
   // aus nichts berechnen lassen). Sie bleiben hier, weil sie nur hier
@@ -141,21 +140,14 @@ export function EvidencePage() {
           people={people}
           locations={locations}
           note={notes[selectedEvidence.id] ?? ""}
-          isBookmarked={bookmarkIds.includes(selectedEvidence.id)}
           onSaveNote={saveNote}
-          onToggleBookmark={toggleBookmark}
           onClose={() => {
             setSelectedId(null);
           }}
         />
       )}
 
-      <EvidenceList
-        items={visibleEvidence}
-        bookmarkIds={bookmarkIds}
-        onToggleBookmark={toggleBookmark}
-        onSelect={handleSelect}
-      />
+      <EvidenceList items={visibleEvidence} onSelect={handleSelect} />
     </section>
   );
 }

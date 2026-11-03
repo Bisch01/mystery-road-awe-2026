@@ -1,4 +1,4 @@
-// Detailansicht eines Beweisstücks (Exercise 5, Demo 6).
+// Detailansicht eines Beweisstücks (Exercise 5, Demo 6 und 8).
 //
 // Ersetzt renderEvidenceDetail() aus js/views/evidence.ts – dort waren es
 // 80 Zeilen String-Konkatenation, danach drei addEventListener auf frisch
@@ -13,6 +13,7 @@
 import { useState } from "react";
 
 import { Badge, toneForRelevance, toneForStatus } from "../../../shared/components/Badge.js";
+import { useBookmarks } from "../../../shared/data/BookmarkContext.js";
 import { formatDate } from "../../../../utils.js";
 import type { Evidence, EvidenceId, Location, Person } from "../../../../types.js";
 
@@ -20,11 +21,9 @@ interface EvidenceDetailProps {
   evidence: Evidence;
   people: Person[];
   locations: Location[];
-  /** Die gespeicherte Notiz – Eigentümer ist AppShell. */
+  /** Die gespeicherte Notiz - Eigentümer ist AppShell (Outlet-Context). */
   note: string;
-  isBookmarked: boolean;
   onSaveNote: (evidenceId: EvidenceId, text: string) => void;
-  onToggleBookmark: (evidenceId: EvidenceId) => void;
   onClose: () => void;
 }
 
@@ -33,11 +32,13 @@ export function EvidenceDetail({
   people,
   locations,
   note,
-  isBookmarked,
   onSaveNote,
-  onToggleBookmark,
   onClose,
 }: EvidenceDetailProps) {
+  // Demo 8: die Lesezeichen kommen aus dem Context, die Notiz als Prop.
+  // Beide Wege in einer Komponente, direkt vergleichbar.
+  const { bookmarkIds, toggleBookmark } = useBookmarks();
+  const isBookmarked = bookmarkIds.includes(evidence.id);
   // Lokaler Entwurf: was im Textfeld steht, bevor gespeichert wird.
   // key={evidence.id} am Aufrufer sorgt dafür, dass er beim Wechsel auf ein
   // anderes Beweisstück neu beginnt.
@@ -121,7 +122,7 @@ export function EvidenceDetail({
           type="button"
           className="btn btn-secondary btn-small"
           onClick={() => {
-            onToggleBookmark(evidence.id);
+            toggleBookmark(evidence.id);
           }}
         >
           {isBookmarked ? "Remove bookmark" : "Add bookmark"}

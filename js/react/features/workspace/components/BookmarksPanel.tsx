@@ -1,4 +1,4 @@
-// Liste der mit Lesezeichen markierten Beweisstücke (Exercise 5, Demo 1 und 6).
+// Liste der mit Lesezeichen markierten Beweisstücke (Exercise 5, Demo 1, 6 und 8).
 //
 // Ersetzt renderBookmarksList() aus js/views/workspace.ts.
 //
@@ -10,15 +10,17 @@
 // Beweisliste. Das Panel kennt den Zustand nicht und ändert ihn nicht selbst.
 
 import { MiniListItem } from "../../dashboard/components/MiniListItem.js";
-import type { Evidence, EvidenceId } from "../../../../types.js";
+import { useBookmarks } from "../../../shared/data/BookmarkContext.js";
+import type { Evidence } from "../../../../types.js";
 
 interface BookmarksPanelProps {
   evidence: Evidence[];
-  bookmarkIds: EvidenceId[];
-  onToggleBookmark: (evidenceId: EvidenceId) => void;
 }
 
-export function BookmarksPanel({ evidence, bookmarkIds, onToggleBookmark }: BookmarksPanelProps) {
+export function BookmarksPanel({ evidence }: BookmarksPanelProps) {
+  // Demo 8: Zustand und Umschaltfunktion aus dem Context, zwei Props weniger.
+  const { bookmarkIds, toggleBookmark } = useBookmarks();
+
   // Abgeleiteter Wert, kein Zustand.
   const bookmarked = evidence.filter((item) => bookmarkIds.includes(item.id));
 
@@ -39,7 +41,7 @@ export function BookmarksPanel({ evidence, bookmarkIds, onToggleBookmark }: Book
                 type="button"
                 className="btn btn-secondary btn-small"
                 onClick={() => {
-                  onToggleBookmark(item.id);
+                  toggleBookmark(item.id);
                 }}
               >
                 Remove

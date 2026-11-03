@@ -1,11 +1,13 @@
-// Eine Beweiskarte (Exercise 5, Demo 1 und 6).
+// Eine Beweiskarte (Exercise 5, Demo 1, 6 und 8).
 //
 // Ersetzt renderEvidenceCardHTML() aus js/views/evidence.ts: dort wurden
 // 20 Zeilen String zusammengesetzt, inklusive der aria-label-Beschriftung
 // mitten in der Konkatenation.
 //
-// Demo 6: zwei Callbacks nach oben – onToggleBookmark und onSelect. Die Karte
-// ändert selbst keinen Zustand, sie meldet nur, was passiert ist.
+// Demo 8: die beiden Lesezeichen-Props sind weg. Die Karte weiß nichts mehr
+// über Lesezeichen – BookmarkButton holt sich alles selbst aus dem Context.
+// Übrig bleibt onSelect, weil das Aufklappen Zustand DIESER Ansicht ist und
+// nicht featureübergreifend.
 
 import { Card } from "../../../shared/components/Card.js";
 import { Badge, toneForRelevance, toneForStatus } from "../../../shared/components/Badge.js";
@@ -15,24 +17,13 @@ import type { Evidence } from "../../../../types.js";
 
 interface EvidenceCardProps {
   evidence: Evidence;
-  isBookmarked: boolean;
-  onToggleBookmark: () => void;
   onSelect: () => void;
 }
 
-export function EvidenceCard({
-  evidence,
-  isBookmarked,
-  onToggleBookmark,
-  onSelect,
-}: EvidenceCardProps) {
+export function EvidenceCard({ evidence, onSelect }: EvidenceCardProps) {
   return (
     <Card className="evidence-card">
-      <BookmarkButton
-        isBookmarked={isBookmarked}
-        evidenceTitle={evidence.title}
-        onToggle={onToggleBookmark}
-      />
+      <BookmarkButton evidenceId={evidence.id} evidenceTitle={evidence.title} />
 
       {/* Demo 6: der Titel öffnet die Detailansicht. Kein Container-Listener
           und kein data-id wie in der Vanilla-Variante – der Handler kennt

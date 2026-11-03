@@ -1,27 +1,21 @@
-// Liste der Beweiskarten (Exercise 5, Demo 1 und 6).
+// Liste der Beweiskarten (Exercise 5, Demo 1, 6 und 8).
 //
 // Kein Container-Listener, keine Event Delegation: jede Karte bringt ihren
 // eigenen onClick mit. Siehe Frage 2 zu Demo 1.
 //
-// Demo 6: reicht zwei Callbacks durch und bindet in beiden die Id der Karte
-// ein, die im .map()-Durchlauf gerade bearbeitet wird.
+// Demo 8: bookmarkIds und onToggleBookmark sind weg. Diese Komponente hat die
+// beiden nur durchgereicht, ohne sie selbst zu benutzen – genau der Fall, für
+// den Context gemacht ist.
 
 import { EvidenceCard } from "./EvidenceCard.js";
 import type { Evidence, EvidenceId } from "../../../../types.js";
 
 interface EvidenceListProps {
   items: Evidence[];
-  bookmarkIds: EvidenceId[];
-  onToggleBookmark: (evidenceId: EvidenceId) => void;
   onSelect: (evidenceId: EvidenceId) => void;
 }
 
-export function EvidenceList({
-  items,
-  bookmarkIds,
-  onToggleBookmark,
-  onSelect,
-}: EvidenceListProps) {
+export function EvidenceList({ items, onSelect }: EvidenceListProps) {
   if (items.length === 0) {
     return <p>No evidence matches the current filters.</p>;
   }
@@ -32,10 +26,6 @@ export function EvidenceList({
         <EvidenceCard
           key={item.id}
           evidence={item}
-          isBookmarked={bookmarkIds.includes(item.id)}
-          onToggleBookmark={() => {
-            onToggleBookmark(item.id);
-          }}
           onSelect={() => {
             onSelect(item.id);
           }}

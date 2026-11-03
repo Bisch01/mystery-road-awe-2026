@@ -1,11 +1,11 @@
 // Dashboard der React-Variante (Exercise 3 Demo 10, erweitert in Exercise 5
-// Demo 4 und 5).
+// Demo 4, 5 und 8).
 //
 // Feature-Komponente im Sinne von Kap. 16.3: kennt die Datenquelle, berechnet
 // die abgeleiteten Werte und reicht reine Werte an die Darstellung weiter.
 
 import { useCaseData } from "../../shared/data/useCaseData.js";
-import { useAppOutlet } from "../../app/AppShell.js";
+import { useBookmarks } from "../../shared/data/BookmarkContext.js";
 import { CaseSummaryCard } from "./components/CaseSummaryCard.js";
 import { StatGrid } from "./components/StatGrid.js";
 import { ReviewProgressPanel } from "./components/ReviewProgressPanel.js";
@@ -15,10 +15,10 @@ import { RecentTimelineList } from "./components/RecentTimelineList.js";
 export function DashboardPage() {
   const { status, caseData, evidence, people, locations, timeline } = useCaseData();
 
-  // Demo 5: die Lesezeichen kommen aus dem Outlet-Context von AppShell.
-  // Keine eigene Kopie mehr – vorher stand hier ein eigenes useState mit
-  // readBookmarks() als Startwert, also eine dritte Kopie derselben Tatsache.
-  const { bookmarkIds } = useAppOutlet();
+  // Demo 5: keine eigene Kopie mehr – vorher stand hier ein eigenes useState
+  // mit readBookmarks() als Startwert, also eine dritte Kopie derselben
+  // Tatsache. Demo 8: der Wert kommt jetzt aus dem Bookmark-Context.
+  const { bookmarkIds } = useBookmarks();
 
   if (status === "loading") {
     return <p className="stub-note">Loading case file&hellip;</p>;
