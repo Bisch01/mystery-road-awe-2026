@@ -1,23 +1,20 @@
 // Datenzugriff der React-Variante.
 //
-// Lädt dieselben fünf JSON-Dateien aus public/data/ wie die Vanilla-App und
-// liest denselben Local-Storage-Schlüssel. Bewusst ein eigener Lader statt
-// api.ts: dort ist das Laden fest mit den render*-Funktionen verdrahtet.
+// Lädt dieselben fünf JSON-Dateien aus public/data/ wie die Vanilla-App.
+// Bewusst ein eigener Lader statt api.ts: dort ist das Laden fest mit den
+// render*-Funktionen verdrahtet.
 //
-// PLATZHALTER: In Exercise 4 wandert dieser Zustand nach oben (Context oder
-// Store), damit sich alle Views dieselben Daten teilen. Heute hält ihn die
-// Dashboard-Seite allein.
+// Exercise 5, Demo 4: die Lesezeichen liegen NICHT mehr in diesem Zustand.
+// Sie wurden dort einmal beim Laden abgelegt (bookmarks: readBookmarks()) und
+// danach nie wieder aktualisiert – also ein Schnappschuss, der veralten kann.
+// Geladene Falldaten und lokaler Benutzerzustand sind zwei verschiedene Dinge
+// und gehören nicht in dasselbe Zustandsobjekt.
 
 import { useEffect, useState } from "react";
-
-// Exercise 5, Demo 1: der Leser liegt jetzt im gemeinsamen Modul, weil auch
-// EvidencePage und WorkspacePage ihn brauchen.
-import { readBookmarks } from "./bookmarksStorage.js";
 
 import type {
   CaseData,
   Evidence,
-  EvidenceId,
   EvidenceRelevance,
   EvidenceStatus,
   Location,
@@ -60,7 +57,6 @@ export interface CaseDataState {
   people: Person[];
   locations: Location[];
   timeline: TimelineEvent[];
-  bookmarks: EvidenceId[];
 }
 
 const EMPTY: CaseDataState = {
@@ -70,7 +66,6 @@ const EMPTY: CaseDataState = {
   people: [],
   locations: [],
   timeline: [],
-  bookmarks: [],
 };
 
 export function useCaseData(): CaseDataState {
@@ -100,7 +95,6 @@ export function useCaseData(): CaseDataState {
           locations,
           evidence: rawEvidence.map(toEvidence),
           timeline,
-          bookmarks: readBookmarks(),
         });
       } catch (err) {
         console.error("Falldaten konnten nicht geladen werden", err);

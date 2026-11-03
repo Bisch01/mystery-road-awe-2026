@@ -1,4 +1,4 @@
-// Evidence Catalogue (Exercise 5, Demo 1).
+// Evidence Catalogue (Exercise 5, Demo 1 bis 4).
 //
 // Feature-Komponente: besitzt den Zustand dieser Ansicht, leitet die
 // sichtbare Liste daraus ab und reicht fertige Werte nach unten.
@@ -21,6 +21,8 @@ import { readBookmarks, writeBookmarks } from "../../shared/data/bookmarksStorag
 import { EvidenceToolbar } from "./components/EvidenceToolbar.js";
 import { EvidenceList } from "./components/EvidenceList.js";
 import { BookmarkStateProbe } from "./components/BookmarkStateProbe.js";
+import { DEFAULT_SORT_ORDER, isEvidenceSortOrder, sortEvidence } from "./evidenceSort.js";
+import type { EvidenceSortOrder } from "./evidenceSort.js";
 import type { Evidence, EvidenceId } from "../../../types.js";
 
 function matchesSearch(item: Evidence, term: string): boolean {
@@ -32,7 +34,10 @@ function matchesSearch(item: Evidence, term: string): boolean {
 export function EvidencePage() {
   const { status, evidence, people, locations } = useCaseData();
 
+  // ZUSTAND: zwei Werte, die der Nutzer setzt und die sich aus nichts
+  // berechnen lassen (Demo 4).
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortOrder, setSortOrder] = useState<EvidenceSortOrder>(DEFAULT_SORT_ORDER);
   // Local Storage ist synchron, deshalb taugt readBookmarks() als Startwert.
   // Die Funktion wird dank der Lazy-Form nur beim ersten Rendern aufgerufen.
   const [bookmarkIds, setBookmarkIds] = useState<EvidenceId[]>(() => readBookmarks());
@@ -42,6 +47,12 @@ export function EvidencePage() {
 
   function handleSearchChange(value: string): void {
     setSearchTerm(value);
+  }
+
+  function handleSortChange(value: string): void {
+    // Ein <select> liefert immer einen String. Der Typwächter macht daraus
+    // einen EvidenceSortOrder – oder verwirft den Wert.
+    if (isEvidenceSortOrder(value)) setSortOrder(value);
   }
 
   function handleToggleBookmark(evidenceId: EvidenceId): void {
@@ -99,22 +110,19 @@ export function EvidencePage() {
     return <p className="stub-note">Falldaten konnten nicht geladen werden.</p>;
   }
 
-  // Abgeleitete Werte, kein eigener Zustand: bei jedem Rendern neu berechnet.
-  // Damit kann die sichtbare Liste nicht von den Daten abweichen (Demo 4).
+  // ABGELEITETER WERT (Demo 4): die sichtbare Liste ist KEIN Zustand. Sie
+  // entsteht bei jedem Rendern neu aus evidence + searchTerm + sortOrder.
+  // Es gibt also keine zweite Liste, die von den Daten abweichen könnte –
+  // anders als das frühere filteredEvidence der Vanilla-Variante.
   //
-  // REIHENFOLGE IST WICHTIG (Demo 3): filter() gibt ein NEUES Array zurück,
-  // erst darauf läuft sort(). sort() verändert zwar an Ort und Stelle, aber
-  // nur dieses Zwischenergebnis – evidence selbst bleibt unberührt.
-  //
-  // Genau hier lag der Sortier-Bug der Vanilla-Variante (Exercise 1, Demo 2):
-  // dort zeigten filteredEvidence und allEvidence nach
-  // setFilteredEvidence(allEvidence) auf DASSELBE Array, und ein .sort()
-  // darauf hätte die Hauptliste dauerhaft umsortiert. Ein .sort() direkt auf
-  // evidence wäre derselbe Fehler – deshalb nie ohne vorherige Kopie.
+  // KOPIEREN VOR DEM SORTIEREN (Demo 3): filter() gibt ein NEUES Array
+  // zurück, und sortEvidence() kopiert zusätzlich selbst. Ein .sort() direkt
+  // auf evidence wäre der Sortier-Bug aus Exercise 1, Demo 2 – dort zeigten
+  // filteredEvidence und allEvidence nach setFilteredEvidence(allEvidence)
+  // auf DASSELBE Array.
   const term = searchTerm.toLowerCase().trim();
-  const visibleEvidence = evidence
-    .filter((item) => matchesSearch(item, term))
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  const filtered = evidence.filter((item) => matchesSearch(item, term));
+  const visibleEvidence = sortEvidence(filtered, sortOrder);
 
   return (
     <section>
@@ -123,6 +131,8 @@ export function EvidencePage() {
       <EvidenceToolbar
         searchTerm={searchTerm}
         onSearchChange={handleSearchChange}
+        sortOrder={sortOrder}
+        onSortChange={handleSortChange}
         evidence={evidence}
         people={people}
         locations={locations}

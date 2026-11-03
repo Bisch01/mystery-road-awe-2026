@@ -1,22 +1,28 @@
-// Werkzeugleiste der Beweisliste (Exercise 5, Demo 1 und 2).
+// Werkzeugleiste der Beweisliste (Exercise 5, Demo 1 bis 4).
 //
 // Das Suchfeld ist kontrolliert: value + onChange, der Zustand liegt in
 // EvidencePage. Der Knopf "Clear search" ändert nur diesen Zustand – das
 // Eingabefeld folgt, weil sein value daraus kommt (Demo 2).
 //
-// Die sechs Auswahlfelder sind noch disabled: sie werden in Demo 7 gemeinsam
-// über einen useReducer verdrahtet, weil sie zusammen einen Zustand bilden.
-// Ein disabled Feld zeigt den Zustand an, ohne eine Auswahl anzubieten, die
-// wirkungslos bliebe.
+// Das Sortierfeld ist ab Demo 4 ebenfalls verdrahtet.
+//
+// Die fünf Filter-Auswahlfelder sind noch disabled: sie werden in Demo 7
+// gemeinsam über einen useReducer verdrahtet, weil sie zusammen einen Zustand
+// bilden. Ein disabled Feld zeigt den Zustand an, ohne eine Auswahl
+// anzubieten, die wirkungslos bliebe.
 //
 // Die ids tragen ein ev-Präfix, damit sie nicht mit den gleichnamigen
 // Elementen der Vanilla-Variante in index.html kollidieren.
 
+import { SORT_LABELS, SORT_ORDERS } from "../evidenceSort.js";
+import type { EvidenceSortOrder } from "../evidenceSort.js";
 import type { Evidence, Location, Person } from "../../../../types.js";
 
 interface EvidenceToolbarProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
+  sortOrder: EvidenceSortOrder;
+  onSortChange: (value: string) => void;
   evidence: Evidence[];
   people: Person[];
   locations: Location[];
@@ -25,6 +31,8 @@ interface EvidenceToolbarProps {
 export function EvidenceToolbar({
   searchTerm,
   onSearchChange,
+  sortOrder,
+  onSortChange,
   evidence,
   people,
   locations,
@@ -49,6 +57,7 @@ export function EvidenceToolbar({
             onSearchChange(event.target.value);
           }}
         />
+
         {/* Beweis dafür, dass das Feld kontrolliert ist: dieser Knopf steht
             außerhalb des Eingabefelds und leert es, indem er nur den Zustand
             ändert. Das DOM wird nicht angefasst (Demo 2). */}
@@ -124,11 +133,21 @@ export function EvidenceToolbar({
         <label htmlFor="evSort" className="visually-hidden">
           Sort evidence
         </label>
-        <select id="evSort" value="date-desc" disabled>
-          <option value="date-desc">Newest first</option>
-          <option value="date-asc">Oldest first</option>
-          <option value="title-asc">Title (A&ndash;Z)</option>
-          <option value="title-desc">Title (Z&ndash;A)</option>
+        {/* Ab Demo 4 verdrahtet: die Reihenfolge ist Zustand, die sortierte
+            Liste wird daraus abgeleitet. Die <option>-Beschriftungen kommen
+            aus SORT_LABELS, damit Reihenfolge und Text nicht auseinanderlaufen. */}
+        <select
+          id="evSort"
+          value={sortOrder}
+          onChange={(event) => {
+            onSortChange(event.target.value);
+          }}
+        >
+          {SORT_ORDERS.map((order) => (
+            <option key={order} value={order}>
+              {SORT_LABELS[order]}
+            </option>
+          ))}
         </select>
 
         <button type="button" className="btn btn-secondary" disabled>
