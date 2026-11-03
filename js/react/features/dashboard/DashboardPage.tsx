@@ -1,13 +1,11 @@
 // Dashboard der React-Variante (Exercise 3 Demo 10, erweitert in Exercise 5
-// Demo 4).
+// Demo 4 und 5).
 //
 // Feature-Komponente im Sinne von Kap. 16.3: kennt die Datenquelle, berechnet
 // die abgeleiteten Werte und reicht reine Werte an die Darstellung weiter.
 
-import { useState } from "react";
-
 import { useCaseData } from "../../shared/data/useCaseData.js";
-import { readBookmarks } from "../../shared/data/bookmarksStorage.js";
+import { useAppOutlet } from "../../app/AppShell.js";
 import { CaseSummaryCard } from "./components/CaseSummaryCard.js";
 import { StatGrid } from "./components/StatGrid.js";
 import { ReviewProgressPanel } from "./components/ReviewProgressPanel.js";
@@ -17,13 +15,10 @@ import { RecentTimelineList } from "./components/RecentTimelineList.js";
 export function DashboardPage() {
   const { status, caseData, evidence, people, locations, timeline } = useCaseData();
 
-  // Demo 4: die Lesezeichen kommen nicht mehr aus useCaseData (dort waren sie
-  // ein Schnappschuss vom Ladezeitpunkt), sondern aus dem Local Storage.
-  //
-  // BEWUSSTE ZWISCHENSTUFE: das ist eine eigene Kopie, dieselbe Tatsache liegt
-  // auch in EvidencePage und WorkspacePage. Demo 5 hebt den Zustand zum
-  // gemeinsamen Vorfahren hoch; dann gibt es nur noch eine.
-  const [bookmarkIds] = useState(() => readBookmarks());
+  // Demo 5: die Lesezeichen kommen aus dem Outlet-Context von AppShell.
+  // Keine eigene Kopie mehr – vorher stand hier ein eigenes useState mit
+  // readBookmarks() als Startwert, also eine dritte Kopie derselben Tatsache.
+  const { bookmarkIds } = useAppOutlet();
 
   if (status === "loading") {
     return <p className="stub-note">Loading case file&hellip;</p>;

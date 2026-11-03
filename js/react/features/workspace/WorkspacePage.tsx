@@ -1,18 +1,15 @@
-// Investigator Workspace (Exercise 5, Demo 1).
+// Investigator Workspace (Exercise 5, Demo 1 bis 5).
 //
 // Feature-Komponente: holt die Daten und verteilt sie an die drei Bereiche.
 //
-// BEWUSSTE ZWISCHENSTUFE: Lesezeichen und Notizen werden hier direkt aus dem
-// Local Storage gelesen. Für die Lesezeichen heißt das: dieselbe Tatsache
-// liegt in EvidencePage und hier getrennt vor. Toggelt man in der Beweisliste
-// ein Lesezeichen, sieht der Workspace die Änderung erst nach einem
-// Seitenwechsel. Genau das ist "duplicated state" – Demo 5 hebt den Zustand
-// zum gemeinsamen Vorfahren hoch und beseitigt die Doppelung.
+// Demo 5: die Lesezeichen kommen aus dem Outlet-Context von AppShell. Vorher
+// las diese Seite sie selbst aus dem Local Storage – eine von drei Kopien
+// derselben Tatsache. Jetzt gibt es nur noch eine Quelle.
 
 import { useState } from "react";
 
 import { useCaseData } from "../../shared/data/useCaseData.js";
-import { readBookmarks } from "../../shared/data/bookmarksStorage.js";
+import { useAppOutlet } from "../../app/AppShell.js";
 import { readNotes } from "../../shared/data/notesStorage.js";
 import { BookmarksPanel } from "./components/BookmarksPanel.js";
 import { NotesPanel } from "./components/NotesPanel.js";
@@ -21,7 +18,10 @@ import { HypothesisForm } from "./components/HypothesisForm.js";
 export function WorkspacePage() {
   const { status, evidence, people } = useCaseData();
 
-  const [bookmarkIds] = useState(() => readBookmarks());
+  // Demo 5: Lesezeichen aus dem Outlet-Context von AppShell, keine eigene
+  // Kopie mehr. Die Notizen bleiben lokal – sie werden nur hier gelesen,
+  // es gibt also nichts zu teilen.
+  const { bookmarkIds } = useAppOutlet();
   const [notes] = useState(() => readNotes());
 
   if (status === "loading") {
