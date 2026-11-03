@@ -1,38 +1,37 @@
-// Werkzeugleiste der Beweisliste (Exercise 5, Demo 1 bis 4).
+// Werkzeugleiste der Beweisliste (Exercise 5, Demo 1 bis 7).
 //
-// Das Suchfeld ist kontrolliert: value + onChange, der Zustand liegt in
-// EvidencePage. Der Knopf "Clear search" ändert nur diesen Zustand – das
-// Eingabefeld folgt, weil sein value daraus kommt (Demo 2).
+// Demo 7: alle sieben Bedienelemente sind verdrahtet. Die Leiste bekommt den
+// kompletten Filterzustand als EIN Objekt und meldet Änderungen über drei
+// Callbacks zurück – einen pro Vorgang des Reducers.
 //
-// Das Sortierfeld ist ab Demo 4 ebenfalls verdrahtet.
-//
-// Die fünf Filter-Auswahlfelder sind noch disabled: sie werden in Demo 7
-// gemeinsam über einen useReducer verdrahtet, weil sie zusammen einen Zustand
-// bilden. Ein disabled Feld zeigt den Zustand an, ohne eine Auswahl
-// anzubieten, die wirkungslos bliebe.
+// Vorher brauchte sie dafür vier Props (searchTerm, onSearchChange, sortOrder,
+// onSortChange) und hätte für die fünf restlichen Felder zehn weitere
+// gebraucht. Jetzt sind es vier, unabhängig von der Anzahl der Filter.
 //
 // Die ids tragen ein ev-Präfix, damit sie nicht mit den gleichnamigen
 // Elementen der Vanilla-Variante in index.html kollidieren.
 
 import { SORT_LABELS, SORT_ORDERS } from "../evidenceSort.js";
-import type { EvidenceSortOrder } from "../evidenceSort.js";
+import type { EvidenceFilterState, FilterField } from "../evidenceFilters.js";
 import type { Evidence, Location, Person } from "../../../../types.js";
 
 interface EvidenceToolbarProps {
-  searchTerm: string;
-  onSearchChange: (value: string) => void;
-  sortOrder: EvidenceSortOrder;
+  filters: EvidenceFilterState;
+  activeCount: number;
+  onFilterChange: (field: FilterField, value: string) => void;
   onSortChange: (value: string) => void;
+  onClearFilters: () => void;
   evidence: Evidence[];
   people: Person[];
   locations: Location[];
 }
 
 export function EvidenceToolbar({
-  searchTerm,
-  onSearchChange,
-  sortOrder,
+  filters,
+  activeCount,
+  onFilterChange,
   onSortChange,
+  onClearFilters,
   evidence,
   people,
   locations,
@@ -52,30 +51,22 @@ export function EvidenceToolbar({
           id="evSearch"
           placeholder="Search evidence by title, summary, or tag&hellip;"
           autoComplete="off"
-          value={searchTerm}
+          value={filters.search}
           onChange={(event) => {
-            onSearchChange(event.target.value);
+            onFilterChange("search", event.target.value);
           }}
         />
-
-        {/* Beweis dafür, dass das Feld kontrolliert ist: dieser Knopf steht
-            außerhalb des Eingabefelds und leert es, indem er nur den Zustand
-            ändert. Das DOM wird nicht angefasst (Demo 2). */}
-        <button
-          type="button"
-          className="btn btn-secondary btn-small"
-          disabled={searchTerm === ""}
-          onClick={() => {
-            onSearchChange("");
-          }}
-        >
-          Clear search
-        </button>
 
         <label htmlFor="evType" className="visually-hidden">
           Filter by type
         </label>
-        <select id="evType" value="" disabled>
+        <select
+          id="evType"
+          value={filters.type}
+          onChange={(event) => {
+            onFilterChange("type", event.target.value);
+          }}
+        >
           <option value="">All types</option>
           {types.map((type) => (
             <option key={type} value={type}>
@@ -87,7 +78,13 @@ export function EvidenceToolbar({
         <label htmlFor="evPerson" className="visually-hidden">
           Filter by person
         </label>
-        <select id="evPerson" value="" disabled>
+        <select
+          id="evPerson"
+          value={filters.personId}
+          onChange={(event) => {
+            onFilterChange("personId", event.target.value);
+          }}
+        >
           <option value="">All people</option>
           {people.map((person) => (
             <option key={person.id} value={person.id}>
@@ -99,7 +96,13 @@ export function EvidenceToolbar({
         <label htmlFor="evLocation" className="visually-hidden">
           Filter by location
         </label>
-        <select id="evLocation" value="" disabled>
+        <select
+          id="evLocation"
+          value={filters.locationId}
+          onChange={(event) => {
+            onFilterChange("locationId", event.target.value);
+          }}
+        >
           <option value="">All locations</option>
           {locations.map((location) => (
             <option key={location.id} value={location.id}>
@@ -113,7 +116,13 @@ export function EvidenceToolbar({
         <label htmlFor="evStatus" className="visually-hidden">
           Filter by status
         </label>
-        <select id="evStatus" value="" disabled>
+        <select
+          id="evStatus"
+          value={filters.status}
+          onChange={(event) => {
+            onFilterChange("status", event.target.value);
+          }}
+        >
           <option value="">All statuses</option>
           <option value="unreviewed">Unreviewed</option>
           <option value="reviewed">Reviewed</option>
@@ -123,7 +132,13 @@ export function EvidenceToolbar({
         <label htmlFor="evRelevance" className="visually-hidden">
           Filter by relevance
         </label>
-        <select id="evRelevance" value="" disabled>
+        <select
+          id="evRelevance"
+          value={filters.relevance}
+          onChange={(event) => {
+            onFilterChange("relevance", event.target.value);
+          }}
+        >
           <option value="">All relevance</option>
           <option value="unknown">Unknown</option>
           <option value="relevant">Relevant</option>
@@ -133,12 +148,11 @@ export function EvidenceToolbar({
         <label htmlFor="evSort" className="visually-hidden">
           Sort evidence
         </label>
-        {/* Ab Demo 4 verdrahtet: die Reihenfolge ist Zustand, die sortierte
-            Liste wird daraus abgeleitet. Die <option>-Beschriftungen kommen
-            aus SORT_LABELS, damit Reihenfolge und Text nicht auseinanderlaufen. */}
+        {/* Eigener Vorgang (SET_SORT), weil die Sortierung kein Filter ist:
+            CLEAR_FILTERS lässt sie absichtlich stehen. */}
         <select
           id="evSort"
-          value={sortOrder}
+          value={filters.sortOrder}
           onChange={(event) => {
             onSortChange(event.target.value);
           }}
@@ -150,8 +164,15 @@ export function EvidenceToolbar({
           ))}
         </select>
 
-        <button type="button" className="btn btn-secondary" disabled>
-          Clear filters
+        {/* Ein Klick, ein Vorgang, sechs Werte zurückgesetzt. Vanilla brauchte
+            dafür sechs Zuweisungen an DOM-Elemente. */}
+        <button
+          type="button"
+          className="btn btn-secondary"
+          disabled={activeCount === 0}
+          onClick={onClearFilters}
+        >
+          Clear filters{activeCount > 0 ? ` (${String(activeCount)})` : ""}
         </button>
       </div>
     </div>
