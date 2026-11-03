@@ -971,3 +971,20 @@ a.nav-btn {
 .probe-bad {
   color: #b3261e;
 }
+
+/* React-Variante, Exercise 5 Demo 6: Kartentitel als Knopf.
+   Sieht wie Text aus, verhält sich wie ein Knopf (Tastatur, Fokus). */
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.link-button:hover {
+  text-decoration: underline;
+}

@@ -1,8 +1,11 @@
-// Eine Beweiskarte (Exercise 5, Demo 1).
+// Eine Beweiskarte (Exercise 5, Demo 1 und 6).
 //
 // Ersetzt renderEvidenceCardHTML() aus js/views/evidence.ts: dort wurden
 // 20 Zeilen String zusammengesetzt, inklusive der aria-label-Beschriftung
 // mitten in der Konkatenation.
+//
+// Demo 6: zwei Callbacks nach oben – onToggleBookmark und onSelect. Die Karte
+// ändert selbst keinen Zustand, sie meldet nur, was passiert ist.
 
 import { Card } from "../../../shared/components/Card.js";
 import { Badge, toneForRelevance, toneForStatus } from "../../../shared/components/Badge.js";
@@ -14,9 +17,15 @@ interface EvidenceCardProps {
   evidence: Evidence;
   isBookmarked: boolean;
   onToggleBookmark: () => void;
+  onSelect: () => void;
 }
 
-export function EvidenceCard({ evidence, isBookmarked, onToggleBookmark }: EvidenceCardProps) {
+export function EvidenceCard({
+  evidence,
+  isBookmarked,
+  onToggleBookmark,
+  onSelect,
+}: EvidenceCardProps) {
   return (
     <Card className="evidence-card">
       <BookmarkButton
@@ -25,7 +34,14 @@ export function EvidenceCard({ evidence, isBookmarked, onToggleBookmark }: Evide
         onToggle={onToggleBookmark}
       />
 
-      <h3>{evidence.title}</h3>
+      {/* Demo 6: der Titel öffnet die Detailansicht. Kein Container-Listener
+          und kein data-id wie in der Vanilla-Variante – der Handler kennt
+          sein Beweisstück, weil er im .map()-Durchlauf entstanden ist. */}
+      <h3>
+        <button type="button" className="link-button" onClick={onSelect}>
+          {evidence.title}
+        </button>
+      </h3>
 
       <div className="evidence-meta">
         {evidence.id} &middot; {evidence.type} &middot; {formatDate(evidence.timestamp)}
