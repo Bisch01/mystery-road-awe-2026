@@ -1,4 +1,4 @@
-// Hypothesen-Formular (Exercise 5, Demo 2).
+// Hypothesen-Formular (Exercise 5, Demo 2 und 10).
 //
 // Alle sechs Felder sind jetzt KONTROLLIERT: ihr angezeigter Wert kommt aus
 // dem React-Zustand (value), und jede Eingabe geht durch onChange zurück in
@@ -12,8 +12,12 @@
 // EINE useState-Variable für alle sechs Felder, nicht sechs einzelne:
 // die Felder werden gemeinsam geladen, gemeinsam gespeichert und entsprechen
 // genau der Form des Entwurfs im Local Storage (siehe Frage 2).
+//
+// Demo 10: der "Saved"-Timer lief vorher frei in handleSubmit() und damit
+// außerhalb von Reacts Lebenszyklus. Jetzt liegt er in einem useEffect mit
+// Aufräumfunktion.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
 import { readHypothesis, writeHypothesis } from "../../../shared/data/hypothesisStorage.js";
@@ -28,7 +32,25 @@ interface HypothesisFormProps {
 export function HypothesisForm({ people, evidence }: HypothesisFormProps) {
   // Lazy-Form: readHypothesis() läuft nur beim ersten Rendern.
   const [draft, setDraft] = useState<HypothesisDraft>(() => readHypothesis());
-  const [saved, setSaved] = useState(false);
+  // Demo 10: Zähler statt boolesches Flag. Jeder Speichern-Vorgang erhöht ihn,
+  // dadurch sieht der Effect unten eine neue Abhängigkeit, räumt den alten
+  // Timer ab und startet die 2 Sekunden neu.
+  const [savedTick, setSavedTick] = useState(0);
+  const saved = savedTick > 0;
+
+  // Der Timer gehört in einen Effect MIT Aufräumfunktion. Vorher lief er frei
+  // in handleSubmit: beim Verlassen der Ansicht feuerte er auf eine bereits
+  // ausgehängte Komponente, und zwei Klicks hintereinander ließen die
+  // Bestätigung zu früh verschwinden.
+  useEffect(() => {
+    if (savedTick === 0) return;
+    const timer = window.setTimeout(() => {
+      setSavedTick(0);
+    }, 2000);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [savedTick]);
 
   // Ein neues Objekt statt einer Zuweisung an draft.xy: der alte Zustand
   // bleibt unangetastet. Partial<HypothesisDraft> hält den Aufruf typsicher –
@@ -49,10 +71,7 @@ export function HypothesisForm({ people, evidence }: HypothesisFormProps) {
     if (!writeHypothesis(toSave)) return;
 
     setDraft(toSave);
-    setSaved(true);
-    setTimeout(() => {
-      setSaved(false);
-    }, 2000);
+    setSavedTick((current) => current + 1);
   }
 
   return (

@@ -1,4 +1,4 @@
-// Detailansicht eines Beweisstücks (Exercise 5, Demo 6, 8 und 9).
+// Detailansicht eines Beweisstücks (Exercise 5, Demo 6, 8, 9 und 10).
 //
 // Ersetzt renderEvidenceDetail() aus js/views/evidence.ts – dort waren es
 // 80 Zeilen String-Konkatenation, danach drei addEventListener auf frisch
@@ -9,8 +9,12 @@
 // liest die Falldaten selbst aus dem CaseDataContext. Damit sinkt die
 // Prop-Liste von 6 auf 4, und EvidencePage muss Daten nicht mehr nur
 // durchreichen (Prop Drilling).
+//
+// Demo 10: der "Saved"-Timer lief vorher frei in handleSave(). Jetzt steckt
+// er in einem useEffect mit Aufräumfunktion - das ist die letzte Stelle
+// dieser Komponente, die Arbeit außerhalb von Reacts Lebenszyklus gemacht hat.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Badge, toneForRelevance, toneForStatus } from "../../../shared/components/Badge.js";
 import { useBookmarks } from "../../../shared/data/BookmarkContext.js";
@@ -37,7 +41,24 @@ export function EvidenceDetail({ evidence, note, onSaveNote, onClose }: Evidence
   // key={evidence.id} am Aufrufer sorgt dafür, dass er beim Wechsel auf ein
   // anderes Beweisstück neu beginnt.
   const [draftNote, setDraftNote] = useState(note);
-  const [saved, setSaved] = useState(false);
+  // Demo 10: Zähler statt boolesches Flag. Jeder Speichern-Klick erhöht ihn,
+  // dadurch ändert sich die Abhängigkeit des Effects und die 2 Sekunden
+  // beginnen neu - sonst löscht der Timer des ersten Klicks die Bestätigung
+  // des zweiten zu früh.
+  const [savedTick, setSavedTick] = useState(0);
+  const saved = savedTick > 0;
+
+  // Timer MIT Aufräumfunktion: beim Schließen der Detailansicht wird er
+  // abgebrochen statt auf eine ausgehängte Komponente zu feuern.
+  useEffect(() => {
+    if (savedTick === 0) return;
+    const timer = window.setTimeout(() => {
+      setSavedTick(0);
+    }, 2000);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [savedTick]);
 
   // Abgeleitete Werte: Namen zu den Ids, kein Zustand.
   const personNames = evidence.personIds.map(
@@ -52,10 +73,7 @@ export function EvidenceDetail({ evidence, note, onSaveNote, onClose }: Evidence
 
   function handleSave(): void {
     onSaveNote(evidence.id, draftNote);
-    setSaved(true);
-    setTimeout(() => {
-      setSaved(false);
-    }, 2000);
+    setSavedTick((current) => current + 1);
   }
 
   return (
