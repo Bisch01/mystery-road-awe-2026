@@ -1,4 +1,4 @@
-// Werkzeugleiste der Beweisliste (Exercise 5, Demo 1 bis 7).
+// Werkzeugleiste der Beweisliste (Exercise 5, Demo 1 bis 9).
 //
 // Demo 7: alle sieben Bedienelemente sind verdrahtet. Die Leiste bekommt den
 // kompletten Filterzustand als EIN Objekt und meldet Änderungen über drei
@@ -8,12 +8,15 @@
 // onSortChange) und hätte für die fünf restlichen Felder zehn weitere
 // gebraucht. Jetzt sind es vier, unabhängig von der Anzahl der Filter.
 //
+// Demo 9: drei Props weniger - die Daten für die Auswahllisten kommen direkt
+// aus dem CaseData-Context statt über EvidencePage.
+//
 // Die ids tragen ein ev-Präfix, damit sie nicht mit den gleichnamigen
 // Elementen der Vanilla-Variante in index.html kollidieren.
 
 import { SORT_LABELS, SORT_ORDERS } from "../evidenceSort.js";
+import { useCaseData } from "../../../shared/data/useCaseData.js";
 import type { EvidenceFilterState, FilterField } from "../evidenceFilters.js";
-import type { Evidence, Location, Person } from "../../../../types.js";
 
 interface EvidenceToolbarProps {
   filters: EvidenceFilterState;
@@ -21,9 +24,6 @@ interface EvidenceToolbarProps {
   onFilterChange: (field: FilterField, value: string) => void;
   onSortChange: (value: string) => void;
   onClearFilters: () => void;
-  evidence: Evidence[];
-  people: Person[];
-  locations: Location[];
 }
 
 export function EvidenceToolbar({
@@ -32,10 +32,12 @@ export function EvidenceToolbar({
   onFilterChange,
   onSortChange,
   onClearFilters,
-  evidence,
-  people,
-  locations,
 }: EvidenceToolbarProps) {
+  // Demo 9: die Daten für die Auswahllisten kommen direkt aus dem
+  // CaseData-Context. Vorher wurden evidence, people und locations von
+  // EvidencePage hierher gereicht, obwohl sie dort nur durchgegeben wurden.
+  const { evidence, people, locations } = useCaseData();
+
   // Abgeleiteter Wert, kein Zustand: die Typliste steht in den Daten.
   // Ersetzt populateEvidenceDropdowns(), das die <option> per innerHTML baute.
   const types = [...new Set(evidence.map((item) => item.type.toLowerCase()))].sort();

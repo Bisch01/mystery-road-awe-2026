@@ -1,4 +1,4 @@
-// Evidence Catalogue (Exercise 5, Demo 1 bis 8).
+// Evidence Catalogue (Exercise 5, Demo 1 bis 9).
 //
 // Feature-Komponente: besitzt den Zustand DIESER Ansicht und leitet die
 // sichtbare Liste daraus ab.
@@ -42,7 +42,7 @@ import type { FilterField } from "./evidenceFilters.js";
 import type { EvidenceId } from "../../../types.js";
 
 export function EvidencePage() {
-  const { status, evidence, people, locations } = useCaseData();
+  const { status, evidence, people } = useCaseData();
 
   // Zwei Transportwege nebeneinander: Lesezeichen über Context,
   // Notizen über den Outlet-Context von AppShell (Demo 8).
@@ -110,9 +110,6 @@ export function EvidencePage() {
         onFilterChange={handleFilterChange}
         onSortChange={handleSortChange}
         onClearFilters={handleClearFilters}
-        evidence={evidence}
-        people={people}
-        locations={locations}
       />
 
       <p className="filter-note">
@@ -137,8 +134,6 @@ export function EvidencePage() {
         <EvidenceDetail
           key={selectedEvidence.id}
           evidence={selectedEvidence}
-          people={people}
-          locations={locations}
           note={notes[selectedEvidence.id] ?? ""}
           onSaveNote={saveNote}
           onClose={() => {

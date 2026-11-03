@@ -13,6 +13,7 @@ import { HashRouter, Navigate, Route, Routes } from "react-router";
 
 import { AppShell } from "./app/AppShell.js";
 import { BookmarkProvider } from "./shared/data/BookmarkContext.js";
+import { CaseDataProvider } from "./shared/data/useCaseData.js";
 import { DEFAULT_PATH } from "./app/routes.js";
 
 import { DashboardPage } from "./features/dashboard/DashboardPage.js";
@@ -30,33 +31,36 @@ export function App() {
     // ist nicht an die Routenstruktur gebunden - jeder Nachfahre kommt an den
     // Wert, unabhängig davon, ob er Kindroute von AppShell ist.
     <BookmarkProvider>
-      <HashRouter>
-        <Routes>
-          {/* Layout-Route ohne eigenen Pfad: AppShell rendert Rahmen + <Outlet />. */}
-          <Route element={<AppShell />}>
-            <Route index element={<Navigate to={DEFAULT_PATH} replace />} />
+      {/* Demo 9: ein Ladevorgang für die ganze App statt einer pro Seite. */}
+      <CaseDataProvider>
+        <HashRouter>
+          <Routes>
+            {/* Layout-Route ohne eigenen Pfad: AppShell rendert Rahmen + <Outlet />. */}
+            <Route element={<AppShell />}>
+              <Route index element={<Navigate to={DEFAULT_PATH} replace />} />
 
-            <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="evidence" element={<EvidencePage />} />
+              <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="evidence" element={<EvidencePage />} />
 
-            {/* Verschachtelte Routen: TeamLayout lädt die Daten und zeichnet die
+              {/* Verschachtelte Routen: TeamLayout lädt die Daten und zeichnet die
               Tab-Leiste, die Kindroute entscheidet, welches Gitter erscheint. */}
-            <Route path="team" element={<TeamLayout />}>
-              <Route index element={<Navigate to="people" replace />} />
-              <Route path="people" element={<PeoplePage />} />
-              <Route path="people/:personId" element={<PersonDetailPage />} />
-              <Route path="locations" element={<LocationsPage />} />
-            </Route>
+              <Route path="team" element={<TeamLayout />}>
+                <Route index element={<Navigate to="people" replace />} />
+                <Route path="people" element={<PeoplePage />} />
+                <Route path="people/:personId" element={<PersonDetailPage />} />
+                <Route path="locations" element={<LocationsPage />} />
+              </Route>
 
-            <Route path="timeline" element={<TimelinePage />} />
-            <Route path="workspace" element={<WorkspacePage />} />
+              <Route path="timeline" element={<TimelinePage />} />
+              <Route path="workspace" element={<WorkspacePage />} />
 
-            {/* Auffangroute für alles Unbekannte. replace, damit der falsche
+              {/* Auffangroute für alles Unbekannte. replace, damit der falsche
               Pfad keinen History-Eintrag hinterlässt. */}
-            <Route path="*" element={<Navigate to={DEFAULT_PATH} replace />} />
-          </Route>
-        </Routes>
-      </HashRouter>
+              <Route path="*" element={<Navigate to={DEFAULT_PATH} replace />} />
+            </Route>
+          </Routes>
+        </HashRouter>
+      </CaseDataProvider>
     </BookmarkProvider>
   );
 }

@@ -1,40 +1,34 @@
-// Detailansicht eines Beweisstücks (Exercise 5, Demo 6 und 8).
+// Detailansicht eines Beweisstücks (Exercise 5, Demo 6, 8 und 9).
 //
 // Ersetzt renderEvidenceDetail() aus js/views/evidence.ts – dort waren es
 // 80 Zeilen String-Konkatenation, danach drei addEventListener auf frisch
 // erzeugte Elemente, und der Notiztext wurde beim Speichern per
 // textarea.getAttribute("data-evidence-id") aus dem DOM zurückgelesen.
 //
-// Diese Komponente besitzt KEINEN gemeinsamen Zustand. Sie bekommt die Notiz
-// als Prop und meldet eine Änderung über onSaveNote nach oben. Der eigene
-// useState ist nur der Entwurf im Textfeld, solange nicht gespeichert wurde –
-// den braucht niemand sonst.
+// Demo 9: people und locations sind als Props weggefallen. Die Komponente
+// liest die Falldaten selbst aus dem CaseDataContext. Damit sinkt die
+// Prop-Liste von 6 auf 4, und EvidencePage muss Daten nicht mehr nur
+// durchreichen (Prop Drilling).
 
 import { useState } from "react";
 
 import { Badge, toneForRelevance, toneForStatus } from "../../../shared/components/Badge.js";
 import { useBookmarks } from "../../../shared/data/BookmarkContext.js";
+import { useCaseData } from "../../../shared/data/useCaseData.js";
 import { formatDate } from "../../../../utils.js";
-import type { Evidence, EvidenceId, Location, Person } from "../../../../types.js";
+import type { Evidence, EvidenceId } from "../../../../types.js";
 
 interface EvidenceDetailProps {
   evidence: Evidence;
-  people: Person[];
-  locations: Location[];
   /** Die gespeicherte Notiz - Eigentümer ist AppShell (Outlet-Context). */
   note: string;
   onSaveNote: (evidenceId: EvidenceId, text: string) => void;
   onClose: () => void;
 }
 
-export function EvidenceDetail({
-  evidence,
-  people,
-  locations,
-  note,
-  onSaveNote,
-  onClose,
-}: EvidenceDetailProps) {
+export function EvidenceDetail({ evidence, note, onSaveNote, onClose }: EvidenceDetailProps) {
+  // Demo 9: Falldaten aus dem Context, nicht mehr als Prop.
+  const { people, locations } = useCaseData();
   // Demo 8: die Lesezeichen kommen aus dem Context, die Notiz als Prop.
   // Beide Wege in einer Komponente, direkt vergleichbar.
   const { bookmarkIds, toggleBookmark } = useBookmarks();
