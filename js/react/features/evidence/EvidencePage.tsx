@@ -20,6 +20,7 @@ import { useCaseData } from "../../shared/data/useCaseData.js";
 import { readBookmarks, writeBookmarks } from "../../shared/data/bookmarksStorage.js";
 import { EvidenceToolbar } from "./components/EvidenceToolbar.js";
 import { EvidenceList } from "./components/EvidenceList.js";
+import { BookmarkStateProbe } from "./components/BookmarkStateProbe.js";
 import type { Evidence, EvidenceId } from "../../../types.js";
 
 function matchesSearch(item: Evidence, term: string): boolean {
@@ -35,21 +36,59 @@ export function EvidencePage() {
   // Local Storage ist synchron, deshalb taugt readBookmarks() als Startwert.
   // Die Funktion wird dank der Lazy-Form nur beim ersten Rendern aufgerufen.
   const [bookmarkIds, setBookmarkIds] = useState<EvidenceId[]>(() => readBookmarks());
+  // Demo 3: hält die Referenz VOR dem letzten Umschalten fest, damit die
+  // Zustandssonde zeigen kann, dass das alte Array unangetastet bleibt.
+  const [previousBookmarkIds, setPreviousBookmarkIds] = useState<EvidenceId[]>([]);
 
   function handleSearchChange(value: string): void {
     setSearchTerm(value);
   }
 
   function handleToggleBookmark(evidenceId: EvidenceId): void {
-    // Neues Array statt push/splice: der alte Zustand bleibt unangetastet.
-    // Vanilla-Gegenstück: bookmarks.push(id) und ev.bookmarked = true,
-    // also zwei Mutationen (Demo 3 geht darauf im Detail ein).
+    // UNVERÄNDERLICHES UPDATE (Demo 3).
+    //
+    // filter() und [...spread] erzeugen beide ein NEUES Array. bookmarkIds
+    // selbst wird nicht angefasst – es behält seinen Inhalt und seine
+    // Identität. Deshalb gilt danach next !== bookmarkIds, und genau daran
+    // erkennt React, dass sich der Zustand geändert hat.
+    //
+    // Vanilla-Gegenstück in js/views/evidence.ts, handleBookmarkClick():
+    //   bookmarks.push(evidenceId);   // mutiert das Array an Ort und Stelle
+    //   ev.bookmarked = true;         // mutiert zusätzlich das Datenobjekt
     const next = bookmarkIds.includes(evidenceId)
       ? bookmarkIds.filter((id) => id !== evidenceId)
       : [...bookmarkIds, evidenceId];
 
+    // Die Zusicherung, die Task 2 verlangt: das Ergebnis muss ein anderes
+    // Objekt sein. Im Produktionsbuild entfernt Vite diesen Block.
+    if (import.meta.env.DEV && Object.is(next, bookmarkIds)) {
+      throw new Error("Bookmark-Update hat dasselbe Array zurückgegeben - Mutation!");
+    }
+
+    setPreviousBookmarkIds(bookmarkIds);
     setBookmarkIds(next);
     writeBookmarks(next);
+  }
+
+  // NUR ZUM VORFÜHREN (Demo 3), nicht benutzt außerhalb der Zustandssonde.
+  // Dieselbe Aufgabe wie oben, aber mutierend gelöst – so, wie es die
+  // Vanilla-Variante tut. Das Array wird an Ort und Stelle verändert und
+  // danach dieselbe Referenz an den Setter gegeben.
+  function handleMutatingToggle(): void {
+    const first = evidence[0];
+    if (!first) return;
+
+    if (bookmarkIds.includes(first.id)) {
+      // splice statt filter: verändert das vorhandene Array.
+      bookmarkIds.splice(bookmarkIds.indexOf(first.id), 1);
+    } else {
+      // push statt spread: verändert das vorhandene Array.
+      bookmarkIds.push(first.id);
+    }
+
+    setPreviousBookmarkIds(bookmarkIds);
+    setBookmarkIds(bookmarkIds); // dieselbe Referenz wie vorher
+    writeBookmarks(bookmarkIds);
   }
 
   if (status === "loading") {
@@ -62,6 +101,16 @@ export function EvidencePage() {
 
   // Abgeleitete Werte, kein eigener Zustand: bei jedem Rendern neu berechnet.
   // Damit kann die sichtbare Liste nicht von den Daten abweichen (Demo 4).
+  //
+  // REIHENFOLGE IST WICHTIG (Demo 3): filter() gibt ein NEUES Array zurück,
+  // erst darauf läuft sort(). sort() verändert zwar an Ort und Stelle, aber
+  // nur dieses Zwischenergebnis – evidence selbst bleibt unberührt.
+  //
+  // Genau hier lag der Sortier-Bug der Vanilla-Variante (Exercise 1, Demo 2):
+  // dort zeigten filteredEvidence und allEvidence nach
+  // setFilteredEvidence(allEvidence) auf DASSELBE Array, und ein .sort()
+  // darauf hätte die Hauptliste dauerhaft umsortiert. Ein .sort() direkt auf
+  // evidence wäre derselbe Fehler – deshalb nie ohne vorherige Kopie.
   const term = searchTerm.toLowerCase().trim();
   const visibleEvidence = evidence
     .filter((item) => matchesSearch(item, term))
@@ -83,6 +132,14 @@ export function EvidencePage() {
         {visibleEvidence.length} von {evidence.length} Beweisstücken &middot; {bookmarkIds.length}{" "}
         mit Lesezeichen
       </p>
+
+      {import.meta.env.DEV && (
+        <BookmarkStateProbe
+          previous={previousBookmarkIds}
+          current={bookmarkIds}
+          onMutatingToggle={handleMutatingToggle}
+        />
+      )}
 
       <EvidenceList
         items={visibleEvidence}

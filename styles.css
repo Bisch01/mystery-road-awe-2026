@@ -939,3 +939,35 @@ a.nav-btn {
 .filter-note a {
   color: var(--color-header-2);
 }
+
+/* ---------------------------------------------------------------------
+   React-Variante, Exercise 5 Demo 3: Zustandssonde
+   Nur im Entwicklungsmodus gerendert (import.meta.env.DEV).
+   --------------------------------------------------------------------- */
+.state-probe {
+  background: #fffbe6;
+  border: 1px dashed #d9b400;
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.state-probe code {
+  background: #fff;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.state-probe button {
+  margin-top: 8px;
+}
+
+.probe-good {
+  color: #1d7a3c;
+}
+
+.probe-bad {
+  color: #b3261e;
+}
