@@ -35,6 +35,60 @@ npx serve .
 
 Then open `http://localhost:8080` (or whatever port your server prints) in your browser.
 
+## Development backend (Exercise 6)
+
+Since Exercise 6 the React variant reads its case data from a small **read-only Node backend**
+instead of the static JSON files.
+
+> **Development only.** This server is never deployed. The GitHub Pages workflow from Exercise 2
+> still builds and publishes the static frontend only, and the production build keeps reading
+> `public/data/*.json`. `express` is therefore a **devDependency**.
+
+Run it in a second terminal, alongside the Vite dev server:
+
+```bash
+# terminal 1
+npm run dev        # Vite on http://localhost:5173
+
+# terminal 2
+npm run server     # Express on http://localhost:3001
+```
+
+Vite proxies everything under `/api` to port 3001 (see `vite.config.js`), so the browser only ever
+talks to `localhost:5173`. There is no second origin and therefore **no CORS configuration**
+anywhere. Calling `http://localhost:3001/api/...` directly from the page would be blocked by the
+browser.
+
+### Endpoints
+
+One `GET` per resource, each returning exactly the same JSON as the corresponding file in
+`public/data/`:
+
+| Endpoint         | Source file                  |
+| ---------------- | ---------------------------- |
+| `/api/case`      | `public/data/case.json`      |
+| `/api/evidence`  | `public/data/evidence.json`  |
+| `/api/people`    | `public/data/people.json`    |
+| `/api/locations` | `public/data/locations.json` |
+| `/api/timeline`  | `public/data/timeline.json`  |
+| `/api/health`    | liveness check               |
+
+There are no write endpoints. Bookmarks, notes, and the hypothesis draft stay in `localStorage`.
+
+### Simulating slow and failing responses
+
+A static file is either instant or a 404, which makes loading indicators, error states, and
+request races impossible to demonstrate. Two switches fix that:
+
+| Switch           | Effect                         | Example                         |
+| ---------------- | ------------------------------ | ------------------------------- |
+| `?delay=<ms>`    | delays the response (max 30 s) | `/api/evidence?delay=3000`      |
+| `?fail=1`        | responds `500` instead of data | `/api/evidence?fail=1`          |
+| `API_DELAY=<ms>` | same, for every request        | `API_DELAY=2000 npm run server` |
+| `API_FAIL=1`     | same, for every request        | `API_FAIL=1 npm run server`     |
+
+`PORT` overrides the default port 3001.
+
 ## Features
 
 - **Dashboard** — case summary and key statistics calculated from the loaded case data.

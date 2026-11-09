@@ -107,6 +107,29 @@ export default tseslint.config(
     },
   },
 
+  // ---------------------------------------------------------------------
+  // Exercise 6, Demo 4: das Lese-Backend läuft in Node, nicht im Browser.
+  // Es braucht die Node-Globals (process, console) statt der Browser-Globals.
+  // Es liegt außerhalb von tsconfig ("include": ["js"]), also keine
+  // typbasierten Regeln.
+  // ---------------------------------------------------------------------
+  {
+    files: ["server/**/*.js"],
+    languageOptions: {
+      globals: { ...globals.node },
+    },
+    rules: {
+      ...tseslint.configs.disableTypeChecked.rules,
+      "no-var": "error",
+      "prefer-const": "error",
+      eqeqeq: ["error", "smart"],
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+    },
+  },
+
   // Must be last: turns off every ESLint *stylistic* rule that would
   // otherwise disagree with Prettier's formatting. Prettier owns
   // formatting; ESLint owns correctness/quality. Two tools, one job each.
