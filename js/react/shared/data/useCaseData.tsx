@@ -1,8 +1,9 @@
 // Datenzugriff der React-Variante.
 //
-// Lädt dieselben fünf JSON-Dateien aus public/data/ wie die Vanilla-App.
-// Bewusst ein eigener Lader statt api.ts: dort ist das Laden fest mit den
-// render*-Funktionen verdrahtet.
+// Lädt dieselben fünf Datensätze wie die Vanilla-App - seit Exercise 6,
+// Demo 5 im Entwicklungsmodus aus dem Node-Backend, im Produktionsbuild
+// weiterhin aus public/data/. Bewusst ein eigener Lader statt api.ts: dort
+// ist das Laden fest mit den render*-Funktionen verdrahtet.
 //
 // Exercise 5, Demo 4: die Lesezeichen liegen NICHT mehr in diesem Zustand.
 // Sie wurden dort einmal beim Laden abgelegt (bookmarks: readBookmarks()) und
@@ -17,6 +18,12 @@
 // Speicher. Jetzt lädt genau ein Provider die Daten, und useCaseData() liest
 // sie nur noch aus dem Context. Die Aufrufstellen in den Seiten bleiben
 // unverändert - die Signatur ist dieselbe.
+//
+// Exercise 6, Demo 5: Die Quelle hat gewechselt. Statt der statischen
+// Dateien unter public/data/ fragt der Lader jetzt das Node-Backend aus
+// Demo 4. Dass dafür genau EINE Datei anzufassen war, ist das Ergebnis von
+// Demo 9 aus Exercise 5 - vorher hätte dieselbe Änderung in fünf Seiten
+// gleichzeitig passieren müssen.
 //
 // Die Datei heißt jetzt .tsx, weil sie JSX enthält (<CaseDataContext.Provider>).
 // Die Importe "./useCaseData.js" in den Seiten bleiben gleich: durch
@@ -36,7 +43,22 @@ import type {
   TimelineEvent,
 } from "../../../types.js";
 
-const DATA_BASE = `${import.meta.env.BASE_URL}data/`;
+// Exercise 6, Demo 5: die Falldaten kommen jetzt aus dem Node-Backend
+// (server/server.js), nicht mehr aus den statischen Dateien.
+//
+// Zwei Quellen, weil das Backend absichtlich nur lokal läuft:
+//   Entwicklung  ->  /api/evidence            (Vite leitet an Port 3001 weiter)
+//   Produktion   ->  <base>/data/evidence.json  (GitHub Pages, kein Backend)
+//
+// import.meta.env.DEV entscheidet; Vite ersetzt den Wert beim Bauen fest,
+// der jeweils andere Zweig fällt aus dem Bundle heraus.
+const API_BASE = "/api";
+const FILE_BASE = `${import.meta.env.BASE_URL}data`;
+
+/** Ressourcenname -> Adresse. "evidence" wird zu /api/evidence bzw. .../data/evidence.json. */
+function resourceUrl(resource: string): string {
+  return import.meta.env.DEV ? `${API_BASE}/${resource}` : `${FILE_BASE}/${resource}.json`;
+}
 
 // evidence.json hält sich bei status und relevance nicht an die Union-Typen
 // ("Reviewed" statt "reviewed"). Dieselbe Normalisierung wie in api.ts.
@@ -58,9 +80,19 @@ function toEvidence(raw: RawEvidence): Evidence {
   };
 }
 
-async function fetchJson<T>(file: string): Promise<T> {
-  const res = await fetch(DATA_BASE + file);
-  if (!res.ok) throw new Error(`${file}: HTTP ${String(res.status)}`);
+/**
+ * Holt eine Ressource und wirft bei allem, was nicht 2xx ist.
+ *
+ * Der Wurf ist neu wichtig: fetch() lehnt NUR bei Netzwerkfehlern ab. Ein
+ * 500 vom Server ist aus Sicht von fetch() eine erfolgreiche Antwort, und
+ * res.json() würde den Fehlertext zu parsen versuchen. Ohne diese Prüfung
+ * landet ein Serverfehler also still als kaputte Daten in der Oberfläche,
+ * statt im Fehlerzustand.
+ */
+async function fetchJson<T>(resource: string): Promise<T> {
+  const url = resourceUrl(resource);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${url}: HTTP ${String(res.status)} ${res.statusText}`);
   return (await res.json()) as T;
 }
 
@@ -95,11 +127,11 @@ function useCaseDataLoader(): CaseDataState {
     async function load(): Promise<void> {
       try {
         const [caseData, people, locations, rawEvidence, timeline] = await Promise.all([
-          fetchJson<CaseData>("case.json"),
-          fetchJson<Person[]>("people.json"),
-          fetchJson<Location[]>("locations.json"),
-          fetchJson<RawEvidence[]>("evidence.json"),
-          fetchJson<TimelineEvent[]>("timeline.json"),
+          fetchJson<CaseData>("case"),
+          fetchJson<Person[]>("people"),
+          fetchJson<Location[]>("locations"),
+          fetchJson<RawEvidence[]>("evidence"),
+          fetchJson<TimelineEvent[]>("timeline"),
         ]);
 
         if (cancelled) return;
