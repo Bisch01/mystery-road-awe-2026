@@ -1,4 +1,5 @@
-// Detailansicht eines Beweisstücks (Exercise 5, Demo 6, 8, 9 und 10).
+// Detailansicht eines Beweisstücks (Exercise 5, Demo 6, 8, 9 und 10;
+// Exercise 6, Demo 3).
 //
 // Ersetzt renderEvidenceDetail() aus js/views/evidence.ts – dort waren es
 // 80 Zeilen String-Konkatenation, danach drei addEventListener auf frisch
@@ -13,12 +14,16 @@
 // Demo 10: der "Saved"-Timer lief vorher frei in handleSave(). Jetzt steckt
 // er in einem useEffect mit Aufräumfunktion - das ist die letzte Stelle
 // dieser Komponente, die Arbeit außerhalb von Reacts Lebenszyklus gemacht hat.
+//
+// Exercise 6, Demo 3: zweiter Fall mit Aufräumfunktion, diesmal kein Timer
+// sondern ein Event-Listener am window - siehe shared/hooks/useEscapeKey.
 
 import { useEffect, useState } from "react";
 
 import { Badge, toneForRelevance, toneForStatus } from "../../../shared/components/Badge.js";
 import { useBookmarks } from "../../../shared/data/BookmarkContext.js";
 import { useCaseData } from "../../../shared/data/useCaseData.js";
+import { useEscapeKey } from "../../../shared/hooks/useEscapeKey.js";
 import { formatDate } from "../../../../utils.js";
 import type { Evidence, EvidenceId } from "../../../../types.js";
 
@@ -68,6 +73,11 @@ export function EvidenceDetail({ evidence, note, onSaveNote, onClose }: Evidence
     const match = locations.find((location) => location.id === id);
     return match ? `${match.id} - ${match.name}` : id;
   });
+
+  // Exercise 6, Demo 3: Escape schließt die Detailansicht. Der Listener
+  // hängt am window, also außerhalb von React - er braucht eine
+  // Aufräumfunktion.
+  useEscapeKey(onClose);
 
   const isDirty = draftNote !== note;
 
