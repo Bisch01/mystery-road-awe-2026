@@ -1,4 +1,4 @@
-// Evidence Catalogue (Exercise 5, Demo 1 bis 9).
+// Evidence Catalogue (Exercise 5, Demo 1 bis 9; Exercise 6, Demo 1).
 //
 // Feature-Komponente: besitzt den Zustand DIESER Ansicht und leitet die
 // sichtbare Liste daraus ab.
@@ -17,6 +17,9 @@
 // hier nur noch für die Hinweiszeile und die Zustandssonde gebraucht – die
 // Liste und die Karten holen sie sich selbst.
 //
+// Exercise 6, Demo 1: zusätzlich die RenderPurityProbe, ebenfalls nur im
+// Entwicklungsmodus. Sie führt Seiteneffekte im Render vor.
+//
 // Zwei der drei migrierten Handler (Demo 1) liegen hier:
 //   - onChange am Suchfeld  (handleFilterChange)
 //   - onClick am Stern      (liegt seit Demo 8 in BookmarkButton selbst)
@@ -30,6 +33,7 @@ import { useBookmarks } from "../../shared/data/BookmarkContext.js";
 import { EvidenceToolbar } from "./components/EvidenceToolbar.js";
 import { EvidenceList } from "./components/EvidenceList.js";
 import { BookmarkStateProbe } from "./components/BookmarkStateProbe.js";
+import { RenderPurityProbe } from "./components/RenderPurityProbe.js";
 import { EvidenceDetail } from "./components/EvidenceDetail.js";
 import { isEvidenceSortOrder, sortEvidence } from "./evidenceSort.js";
 import {
@@ -116,6 +120,10 @@ export function EvidencePage() {
         {visibleEvidence.length} von {evidence.length} Beweisstücken &middot; {bookmarkIds.length}{" "}
         mit Lesezeichen &middot; {activeCount} von 6 Filtern aktiv
       </p>
+
+      {import.meta.env.DEV && (
+        <RenderPurityProbe visibleCount={visibleEvidence.length} totalCount={evidence.length} />
+      )}
 
       {import.meta.env.DEV && firstEvidence && (
         <BookmarkStateProbe

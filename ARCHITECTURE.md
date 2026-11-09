@@ -276,3 +276,62 @@ Komponenten sind Funktionen ihrer Props und der Adresse.
   gemeinsames Modul, sobald die Vanilla-Variante entfällt.
 - Die Kasten-Optik ist in `styles.css` doppelt definiert, solange die
   Vanilla-Variante die Dashboard-Kästen ohne `card` rendert.
+
+## Exercise 6, Demo 1: Regel — Render oder Effect?
+
+**Die Regel in einem Satz:**
+
+> Lässt sich der Wert allein aus Props und State berechnen, gehört er in den
+> Render. Berührt der Code etwas außerhalb von React, gehört er in einen
+> Event-Handler oder in einen Effect.
+
+| Ort               | Was dort hingehört                                               | Beispiel aus dieser App                                         |
+| ----------------- | ---------------------------------------------------------------- | --------------------------------------------------------------- |
+| **Render**        | Werte berechnen. Gleiche Props, gleiches Ergebnis, keine Spuren. | `filterEvidence()`, `sortEvidence()`, `activeFilterCount()`     |
+| **Event-Handler** | Was passiert, weil der Benutzer etwas getan hat.                 | `toggleBookmark()` samt `writeBookmarks()`, `saveNote()`        |
+| **Effect**        | Etwas außerhalb von React synchron halten.                       | Timer in `EvidenceDetail`, Laden der Falldaten in `useCaseData` |
+
+**Warum die Regel so streng ist**
+
+React darf die Render-Funktion jederzeit und mehrfach aufrufen, ohne dass das
+Ergebnis auf dem Bildschirm landen muss:
+
+- **StrictMode** ruft sie im Entwicklungsmodus doppelt auf — genau um unreine
+  Komponenten auffliegen zu lassen.
+- Ein Render kann **verworfen** werden, wenn kurz darauf ein neuer Zustand
+  eintrifft.
+- Dieselbe Komponente kann **mehrfach gleichzeitig** gerendert werden.
+
+Eine Spur, die im Render hinterlassen wird, wird dadurch mehrfach, zu
+unvorhersehbaren Zeitpunkten oder für nie sichtbare Durchläufe hinterlassen.
+
+**Abgeleitete Werte sind kein Seiteneffekt**
+
+`filterEvidence()` läuft bei jedem Render neu und ist trotzdem harmlos: Das
+Ergebnis entsteht ausschließlich aus `evidence` und `filters`, und außerhalb
+der Funktion ändert sich nichts. Zweimal ausgeführt kommt zweimal dasselbe
+heraus. Genau das ist der Unterschied — nicht "läuft oft", sondern "hinterlässt
+eine Spur".
+
+Deshalb ist der Umkehrschluss ebenso wichtig: einen abgeleiteten Wert in einen
+Effect zu verlagern (`useEffect(() => setVisible(filter(...)))`) wäre falsch.
+Das kostet einen zusätzlichen Render und schafft eine zweite Wahrheit neben den
+Daten.
+
+**Die absichtliche Gegenprobe**
+
+`features/evidence/components/RenderPurityProbe.tsx` verletzt die Regel
+bewusst und nur im Entwicklungsmodus: eine Modulvariable wird im Render
+hochgezählt, und der Local Storage wird im Render gelesen. Messbare Folgen:
+
+| Beobachtung                     | Anzeige | richtig wäre |
+| ------------------------------- | ------- | ------------ |
+| direkt nach dem Laden           | 2       | 1            |
+| nach Verlassen und Zurückkehren | 10      | 2            |
+
+Die Zahl ist doppelt so hoch wie die Wirklichkeit, weil StrictMode zweimal
+rendert, und sie setzt sich beim Aushängen der Komponente nicht zurück, weil
+die Variable außerhalb von React lebt. Beides fällt im Alltag nicht auf — die
+Zahl sieht ja plausibel aus. Das ist der Kern: ein Seiteneffekt im Render
+"funktioniert scheinbar", liefert aber Werte, auf die man sich nicht verlassen
+kann.
