@@ -48,3 +48,28 @@ export const PARAM_PERSON = "person";
 export function timelineForPerson(personId: string): string {
   return `${ROUTE_PATHS.timeline}?${PARAM_PERSON}=${encodeURIComponent(personId)}`;
 }
+
+/**
+ * Titel je Ansicht für document.title (Exercise 6, Demo 2).
+ *
+ * Steht hier, weil hier das Wissen über Pfade liegt. Die Zuweisung an
+ * document.title passiert nicht hier, sondern in useDocumentTitle - diese
+ * Funktion ist eine reine Berechnung und darf deshalb im Render laufen.
+ */
+const VIEW_TITLES: Record<string, string> = {
+  [ROUTE_PATHS.dashboard]: "Dashboard",
+  [ROUTE_PATHS.evidence]: "Evidence",
+  [ROUTE_PATHS.people]: "People",
+  [ROUTE_PATHS.locations]: "Locations",
+  [ROUTE_PATHS.team]: "People & Locations",
+  [ROUTE_PATHS.timeline]: "Timeline",
+  [ROUTE_PATHS.workspace]: "Workspace",
+};
+
+/** Baut den Dokumenttitel zu einem Pfad. Längster passender Treffer gewinnt. */
+export function titleForPath(pathname: string): string {
+  const paths = Object.keys(VIEW_TITLES).sort((a, b) => b.length - a.length);
+  const match = paths.find((path) => pathname === path || pathname.startsWith(`${path}/`));
+  const view = match === undefined ? "Case" : (VIEW_TITLES[match] ?? "Case");
+  return `${view} · Project ReMotion`;
+}

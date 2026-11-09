@@ -11,11 +11,16 @@
 // (shared/data/BookmarkContext.tsx) und werden nicht mehr hier weitergegeben.
 // Die NOTIZEN bleiben absichtlich hier und werden weiter per Props gereicht –
 // so stehen beide Wege nebeneinander und sind direkt vergleichbar.
+//
+// Demo 2 (Exercise 6): Hier hängt der eine berechtigte Effect der Anwendung,
+// weil AppShell als Einzige über alle Ansichten hinweg montiert bleibt.
 
-import { Outlet, useOutletContext } from "react-router";
+import { Outlet, useLocation, useOutletContext } from "react-router";
 
 import { AppHeader } from "./components/AppHeader.js";
 import { AppFooter } from "./components/AppFooter.js";
+import { useDocumentTitle } from "./useDocumentTitle.js";
+import { titleForPath } from "./routes.js";
 import { useNotesState } from "../shared/data/useNotesState.js";
 import type { NotesState } from "../shared/data/useNotesState.js";
 
@@ -30,6 +35,12 @@ export function useAppOutlet(): AppOutletContext {
 export function AppShell() {
   // Genau EIN Aufruf im ganzen Baum.
   const notesState = useNotesState();
+
+  // Exercise 6, Demo 2: der eine berechtigte Effect dieser Anwendung.
+  // titleForPath() ist eine reine Berechnung und läuft im Render; die
+  // Zuweisung an document.title ist der Seiteneffekt und liegt im Effect.
+  const { pathname } = useLocation();
+  useDocumentTitle(titleForPath(pathname));
 
   return (
     <>

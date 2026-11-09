@@ -1,4 +1,4 @@
-// Evidence Catalogue (Exercise 5, Demo 1 bis 9; Exercise 6, Demo 1).
+// Evidence Catalogue (Exercise 5, Demo 1 bis 9; Exercise 6, Demo 1 und 2).
 //
 // Feature-Komponente: besitzt den Zustand DIESER Ansicht und leitet die
 // sichtbare Liste daraus ab.
@@ -17,8 +17,9 @@
 // hier nur noch für die Hinweiszeile und die Zustandssonde gebraucht – die
 // Liste und die Karten holen sie sich selbst.
 //
-// Exercise 6, Demo 1: zusätzlich die RenderPurityProbe, ebenfalls nur im
-// Entwicklungsmodus. Sie führt Seiteneffekte im Render vor.
+// Exercise 6: zwei weitere Sonden, beide nur im Entwicklungsmodus.
+// RenderPurityProbe (Demo 1) führt Seiteneffekte im Render vor,
+// EffectDepsProbe (Demo 2) die drei Formen der Abhängigkeitsliste.
 //
 // Zwei der drei migrierten Handler (Demo 1) liegen hier:
 //   - onChange am Suchfeld  (handleFilterChange)
@@ -34,6 +35,7 @@ import { EvidenceToolbar } from "./components/EvidenceToolbar.js";
 import { EvidenceList } from "./components/EvidenceList.js";
 import { BookmarkStateProbe } from "./components/BookmarkStateProbe.js";
 import { RenderPurityProbe } from "./components/RenderPurityProbe.js";
+import { EffectDepsProbe } from "./components/EffectDepsProbe.js";
 import { EvidenceDetail } from "./components/EvidenceDetail.js";
 import { isEvidenceSortOrder, sortEvidence } from "./evidenceSort.js";
 import {
@@ -124,6 +126,8 @@ export function EvidencePage() {
       {import.meta.env.DEV && (
         <RenderPurityProbe visibleCount={visibleEvidence.length} totalCount={evidence.length} />
       )}
+
+      {import.meta.env.DEV && <EffectDepsProbe />}
 
       {import.meta.env.DEV && firstEvidence && (
         <BookmarkStateProbe
