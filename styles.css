@@ -1188,3 +1188,36 @@ a.nav-btn {
 .race-log li {
   margin: 2px 0;
 }
+
+/* ---------------------------------------------------------------------
+   React-Variante, Exercise 6 Demo 8: Backend-Anzeige im Fußbereich.
+   Nur im Entwicklungsmodus gerendert.
+   --------------------------------------------------------------------- */
+.backend-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+}
+
+.backend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.backend-pending {
+  color: var(--color-text-muted);
+}
+
+.backend-up {
+  color: #1d7a3c;
+}
+
+.backend-down {
+  color: #b3261e;
+}

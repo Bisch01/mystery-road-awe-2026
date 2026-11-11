@@ -28,16 +28,22 @@
 // geworden, die Fehlermeldung steht darin, und es gibt einen Ausweg
 // (reload). Siehe Kommentar bei CaseDataState.
 //
-// Exercise 6, Demo 7: Die Aufräumfunktion bricht die Anfragen jetzt wirklich
-// ab, statt ihr Ergebnis nur zu ignorieren. Siehe Kommentar im Effect.
+// Exercise 6, Demo 7: Die Aufräumfunktion bricht die Anfragen wirklich ab,
+// statt ihr Ergebnis nur zu ignorieren.
+//
+// Exercise 6, Demo 8: Der handgeschriebene Effect ist komplett entfallen.
+// Was von ihm übrig ist, steht in shared/hooks/useFetch und wird hier
+// fünfmal aufgerufen.
 //
 // Die Datei heißt .tsx, weil sie JSX enthält (<CaseDataContext.Provider>).
 // Die Importe "./useCaseData.js" in den Seiten bleiben gleich: durch
 // moduleResolution "bundler" löst TypeScript "./useCaseData.js" auf
 // useCaseData.tsx auf.
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
+
+import { useFetch } from "../hooks/useFetch.js";
 
 import type {
   CaseData,
@@ -86,31 +92,6 @@ function toEvidence(raw: RawEvidence): Evidence {
   };
 }
 
-/**
- * Holt eine Ressource und wirft bei allem, was nicht 2xx ist.
- *
- * Der Wurf ist neu wichtig: fetch() lehnt NUR bei Netzwerkfehlern ab. Ein
- * 500 vom Server ist aus Sicht von fetch() eine erfolgreiche Antwort, und
- * res.json() würde den Fehlertext zu parsen versuchen. Ohne diese Prüfung
- * landet ein Serverfehler also still als kaputte Daten in der Oberfläche,
- * statt im Fehlerzustand.
- *
- * Demo 7: das Signal wird an fetch() durchgereicht. Ohne diesen Parameter
- * hätte ein AbortController keine Wirkung - der Abbruch muss die EINZELNE
- * Anfrage erreichen, nicht nur die Stelle, die auf sie wartet.
- */
-async function fetchJson<T>(resource: string, signal: AbortSignal): Promise<T> {
-  const url = resourceUrl(resource);
-  const res = await fetch(url, { signal });
-  if (!res.ok) throw new Error(`${url}: HTTP ${String(res.status)} ${res.statusText}`);
-  return (await res.json()) as T;
-}
-
-/** Ein abgebrochener Aufruf ist kein Fehler, sondern ein geplantes Ende. */
-function isAbortError(err: unknown): boolean {
-  return err instanceof Error && err.name === "AbortError";
-}
-
 /** Die geladenen Falldaten. Existiert nur im Zustand "ready". */
 export interface CaseDataPayload {
   caseData: CaseData;
@@ -140,84 +121,59 @@ export type CaseDataState =
   | { status: "error"; message: string; reload: () => void }
   | { status: "ready"; data: CaseDataPayload };
 
-// Der eigentliche Lader. Nicht exportiert: er darf nur EINMAL laufen,
-// nämlich im Provider.
+// Exercise 6, Demo 8: Der handgeschriebene Effect ist weg. Fünfmal
+// derselbe Hook, einmal je Ressource - Laden, Fehlerbehandlung und Abbruch
+// stehen jetzt genau einmal in shared/hooks/useFetch.
+//
+// Das ist die eine der beiden Stellen, die den Hook benutzen. Die zweite ist
+// app/components/BackendStatus.
+//
+// Was hier NICHT in den Hook wandern konnte und bewusst hier bleibt:
+//   - das Zusammenführen der fünf Ergebnisse zu einem Zustand
+//   - toEvidence(), die Normalisierung der Evidence-Daten
+// Beides kennt die Fachlichkeit dieser Anwendung. useFetch kennt nur JSON.
 function useCaseDataLoader(): CaseDataState {
-  const [state, setState] = useState<CaseDataState>({ status: "loading" });
-  // Demo 6: ein Zähler als Abhängigkeit. Erhöhen bedeutet "Effect neu
-  // ausführen" - damit bekommt der Fehlerzustand einen Ausweg.
-  const [reloadToken, setReloadToken] = useState(0);
+  const caseFile = useFetch<CaseData>(resourceUrl("case"));
+  const people = useFetch<Person[]>(resourceUrl("people"));
+  const locations = useFetch<Location[]>(resourceUrl("locations"));
+  const rawEvidence = useFetch<RawEvidence[]>(resourceUrl("evidence"));
+  const timeline = useFetch<TimelineEvent[]>(resourceUrl("timeline"));
 
-  function reload(): void {
-    setState({ status: "loading" });
-    setReloadToken((current) => current + 1);
+  const parts = [caseFile, people, locations, rawEvidence, timeline];
+
+  /** Ein Knopfdruck startet alle fünf Anfragen neu. */
+  function reloadAll(): void {
+    for (const part of parts) part.reload();
   }
 
-  useEffect(() => {
-    // Exercise 6, Demo 7: ein AbortController statt eines cancelled-Flags.
-    //
-    // Vorher stand hier "let cancelled = false", und die Aufräumfunktion
-    // setzte es auf true. Das hat nur das ERGEBNIS verworfen - die fünf
-    // Anfragen liefen trotzdem bis zum Ende. Im Entwicklungsmodus waren das
-    // wegen StrictMode zehn statt fünf, und bei langsamen Antworten dauerte
-    // das Laden doppelt so lange, weil der Browser pro Host nur sechs
-    // Verbindungen gleichzeitig offen hält.
-    //
-    // Jetzt bricht die Aufräumfunktion die Anfragen tatsächlich ab.
-    const controller = new AbortController();
-
-    async function load(): Promise<void> {
-      try {
-        const [caseData, people, locations, rawEvidence, timeline] = await Promise.all([
-          fetchJson<CaseData>("case", controller.signal),
-          fetchJson<Person[]>("people", controller.signal),
-          fetchJson<Location[]>("locations", controller.signal),
-          fetchJson<RawEvidence[]>("evidence", controller.signal),
-          fetchJson<TimelineEvent[]>("timeline", controller.signal),
-        ]);
-
-        setState({
-          status: "ready",
-          data: {
-            caseData,
-            people,
-            locations,
-            evidence: rawEvidence.map(toEvidence),
-            timeline,
-          },
-        });
-      } catch (err) {
-        // Demo 7: ein Abbruch ist KEIN Fehlerzustand. Er bedeutet, dass
-        // jemand dieses Ergebnis absichtlich nicht mehr wollte. Wer das
-        // nicht abfängt, zeigt beim Seitenwechsel eine rote Fehlermeldung
-        // für eine Anfrage, die er selbst gestoppt hat.
-        if (isAbortError(err)) return;
-
-        console.error("Falldaten konnten nicht geladen werden", err);
-
-        // Demo 6: die Meldung des Fehlers wandert IN den Zustand. Vorher
-        // stand sie nur in der Konsole, und die Oberfläche zeigte einen
-        // Satz, der zu jedem Fehler gleich gut und gleich wenig passte.
-        setState({
-          status: "error",
-          message: err instanceof Error ? err.message : String(err),
-          reload,
-        });
-      }
+  // Ein Fehler reicht: ohne vollständige Falldaten ist die Ansicht nicht
+  // sinnvoll zu zeigen. Die erste Fehlermeldung ist die, die angezeigt wird.
+  for (const part of parts) {
+    if (part.status === "error") {
+      return { status: "error", message: part.message, reload: reloadAll };
     }
+  }
 
-    void load();
+  if (
+    caseFile.status !== "ready" ||
+    people.status !== "ready" ||
+    locations.status !== "ready" ||
+    rawEvidence.status !== "ready" ||
+    timeline.status !== "ready"
+  ) {
+    return { status: "loading" };
+  }
 
-    // Demo 7: Die Aufräumfunktion IST der Abbruch. Es gibt keine zweite
-    // Stelle, die abbricht - React ruft sie beim Aushängen und vor jedem
-    // erneuten Lauf des Effects auf, und genau dort gehört abort() hin.
-    return () => {
-      controller.abort();
-    };
-    // reloadToken ist die einzige Abhängigkeit: erhöhen heißt neu laden.
-  }, [reloadToken]);
-
-  return state;
+  return {
+    status: "ready",
+    data: {
+      caseData: caseFile.data,
+      people: people.data,
+      locations: locations.data,
+      evidence: rawEvidence.data.map(toEvidence),
+      timeline: timeline.data,
+    },
+  };
 }
 
 const CaseDataContext = createContext<CaseDataState | null>(null);
