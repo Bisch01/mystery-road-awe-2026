@@ -379,3 +379,16 @@ die Zugriffsschicht wird nachweislich von zwei unabhängigen Stellen benutzt
 (Falldaten und Backend-Anzeige), und der Wechsel der Datenquelle in Demo 5 hat
 gezeigt, wie teuer verstreutes Wissen über Adressen wird — damals musste genau
 deshalb nur eine Datei geändert werden.
+
+## Exercise 6, Demo 10: Datenfluss von Ende zu Ende
+
+Der vollständige Weg eines Beweisstücks — von `public/data/evidence.json` über
+den Node-Endpunkt, die Zugriffsschicht, den Hook und den Provider bis zum
+Abzeichen auf dem Bildschirm — steht mit Diagramm, Messwerten und einer Tabelle
+„was passiert, wenn dieser Schritt still ausfällt" in
+[`docs/DATAFLOW.md`](docs/DATAFLOW.md).
+
+Dort steht auch die begründete UX-Entscheidung zu Lade-, Fehler- und
+Leerzustand sowie die Einschätzung, was der Wechsel von statischen Dateien auf
+einen echten Server erzwungen hat — und was davon begrifflich schon vorher
+nötig gewesen wäre.

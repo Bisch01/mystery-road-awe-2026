@@ -115,3 +115,11 @@ be enabled. The layout targets common desktop and tablet widths.
 This is an existing brownfield application, not a fresh scaffold. It works for everyday use, but
 you should expect to find rough edges, inconsistent patterns, and a handful of bugs as you work
 with it — that discovery process is part of the course.
+
+## Where the data goes
+
+The full path of one piece of evidence — from `public/data/evidence.json` through
+the endpoint, the API layer, the custom hook and the provider to the badge on
+screen — is documented with a diagram in [`docs/DATAFLOW.md`](docs/DATAFLOW.md),
+together with what breaks if any single step silently stops happening, and the
+reasoning behind the loading / error / empty states.
