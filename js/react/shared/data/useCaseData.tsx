@@ -16,8 +16,7 @@
 // Jeder Aufruf war ein eigener useState + eigener useEffect, also fünf
 // fetch()-Aufrufe pro Seitenwechsel und sieben Kopien derselben Daten im
 // Speicher. Jetzt lädt genau ein Provider die Daten, und useCaseData() liest
-// sie nur noch aus dem Context. Die Aufrufstellen in den Seiten bleiben
-// unverändert - die Signatur ist dieselbe.
+// sie nur noch aus dem Context.
 //
 // Exercise 6, Demo 5: Die Quelle hat gewechselt. Statt der statischen
 // Dateien unter public/data/ fragt der Lader jetzt das Node-Backend aus
@@ -25,7 +24,11 @@
 // Demo 9 aus Exercise 5 - vorher hätte dieselbe Änderung in fünf Seiten
 // gleichzeitig passieren müssen.
 //
-// Die Datei heißt jetzt .tsx, weil sie JSX enthält (<CaseDataContext.Provider>).
+// Exercise 6, Demo 6: Der Zustand ist ein unterscheidender Vereinigungstyp
+// geworden, die Fehlermeldung steht darin, und es gibt einen Ausweg
+// (reload). Siehe Kommentar bei CaseDataState.
+//
+// Die Datei heißt .tsx, weil sie JSX enthält (<CaseDataContext.Provider>).
 // Die Importe "./useCaseData.js" in den Seiten bleiben gleich: durch
 // moduleResolution "bundler" löst TypeScript "./useCaseData.js" auf
 // useCaseData.tsx auf.
@@ -96,28 +99,47 @@ async function fetchJson<T>(resource: string): Promise<T> {
   return (await res.json()) as T;
 }
 
-export interface CaseDataState {
-  status: "loading" | "ready" | "error";
-  caseData: CaseData | null;
+/** Die geladenen Falldaten. Existiert nur im Zustand "ready". */
+export interface CaseDataPayload {
+  caseData: CaseData;
   evidence: Evidence[];
   people: Person[];
   locations: Location[];
   timeline: TimelineEvent[];
 }
 
-const EMPTY: CaseDataState = {
-  status: "loading",
-  caseData: null,
-  evidence: [],
-  people: [],
-  locations: [],
-  timeline: [],
-};
+/**
+ * Exercise 6, Demo 6: ein unterscheidender Vereinigungstyp statt eines
+ * Objekts mit Status UND immer vorhandenen Feldern.
+ *
+ * Vorher stand hier status: "loading" | "ready" | "error" NEBEN
+ * evidence: Evidence[]. Beim Laden war evidence also ein leeres Array -
+ * ununterscheidbar von "geladen, aber nichts drin". Genau diese zwei Fälle
+ * soll Demo 6 trennen.
+ *
+ * Jetzt gibt es die Daten nur im Zweig "ready". Eine Komponente, die
+ * evidence lesen will, MUSS vorher den Status geprüft haben, sonst
+ * übersetzt TypeScript nicht. Der Unterschied zu drei Booleans
+ * (isLoading, error, data) ist, dass sich zwei Zweige hier nicht
+ * widersprechen können - es ist immer genau einer.
+ */
+export type CaseDataState =
+  | { status: "loading" }
+  | { status: "error"; message: string; reload: () => void }
+  | { status: "ready"; data: CaseDataPayload };
 
-// Der eigentliche Lader. Nicht exportiert: er darf nur noch EINMAL laufen,
-// nämlich im Provider. Dass das jetzt erzwungen ist, ist der Kern von Demo 9.
+// Der eigentliche Lader. Nicht exportiert: er darf nur EINMAL laufen,
+// nämlich im Provider.
 function useCaseDataLoader(): CaseDataState {
-  const [state, setState] = useState<CaseDataState>(EMPTY);
+  const [state, setState] = useState<CaseDataState>({ status: "loading" });
+  // Demo 6: ein Zähler als Abhängigkeit. Erhöhen bedeutet "Effect neu
+  // ausführen" - damit bekommt der Fehlerzustand einen Ausweg.
+  const [reloadToken, setReloadToken] = useState(0);
+
+  function reload(): void {
+    setState({ status: "loading" });
+    setReloadToken((current) => current + 1);
+  }
 
   useEffect(() => {
     // StrictMode ruft Effects im Entwicklungsmodus doppelt auf. Das Flag
@@ -138,15 +160,26 @@ function useCaseDataLoader(): CaseDataState {
 
         setState({
           status: "ready",
-          caseData,
-          people,
-          locations,
-          evidence: rawEvidence.map(toEvidence),
-          timeline,
+          data: {
+            caseData,
+            people,
+            locations,
+            evidence: rawEvidence.map(toEvidence),
+            timeline,
+          },
         });
       } catch (err) {
         console.error("Falldaten konnten nicht geladen werden", err);
-        if (!cancelled) setState((current) => ({ ...current, status: "error" }));
+        if (cancelled) return;
+
+        // Demo 6: die Meldung des Fehlers wandert IN den Zustand. Vorher
+        // stand sie nur in der Konsole, und die Oberfläche zeigte einen
+        // Satz, der zu jedem Fehler gleich gut und gleich wenig passte.
+        setState({
+          status: "error",
+          message: err instanceof Error ? err.message : String(err),
+          reload,
+        });
       }
     }
 
@@ -155,7 +188,8 @@ function useCaseDataLoader(): CaseDataState {
     return () => {
       cancelled = true;
     };
-  }, []);
+    // reloadToken ist die einzige Abhängigkeit: erhöhen heißt neu laden.
+  }, [reloadToken]);
 
   return state;
 }
@@ -172,13 +206,32 @@ export function CaseDataProvider({ children }: CaseDataProviderProps) {
 }
 
 /**
- * Liest die Falldaten aus dem Context. Signatur unverändert gegenüber Demo 8,
- * deshalb musste in den Seiten keine Zeile angepasst werden.
+ * Der rohe Zustand mit allen drei Zweigen. Genau EINE Stelle benutzt ihn:
+ * AppShell, die daraus Ladeanzeige, Fehlermeldung oder die Ansicht macht.
  */
-export function useCaseData(): CaseDataState {
+export function useCaseDataState(): CaseDataState {
   const value = useContext(CaseDataContext);
   if (value === null) {
-    throw new Error("useCaseData() muss innerhalb von <CaseDataProvider> benutzt werden");
+    throw new Error("useCaseDataState() muss innerhalb von <CaseDataProvider> benutzt werden");
   }
   return value;
+}
+
+/**
+ * Die Falldaten für alles unterhalb der Schranke in AppShell.
+ *
+ * Wirft, wenn noch nicht geladen. Das ist kein Notbehelf, sondern die
+ * Zusicherung: AppShell rendert das <Outlet /> erst im Zustand "ready",
+ * also KANN hier nichts Halbfertiges ankommen. Die Seiten brauchen deshalb
+ * keine eigene Statusabfrage mehr und bekommen die Daten ohne null-Prüfung.
+ */
+export function useCaseData(): CaseDataPayload {
+  const state = useCaseDataState();
+  if (state.status !== "ready") {
+    throw new Error(
+      `useCaseData() wurde im Zustand "${state.status}" aufgerufen - erwartet wird "ready". ` +
+        "Die Komponente hängt außerhalb der Schranke in AppShell."
+    );
+  }
+  return state.data;
 }

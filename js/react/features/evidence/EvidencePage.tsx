@@ -1,4 +1,4 @@
-// Evidence Catalogue (Exercise 5, Demo 1 bis 9; Exercise 6, Demo 1 bis 3).
+// Evidence Catalogue (Exercise 5, Demo 1 bis 9; Exercise 6, Demo 1 bis 3 und 6).
 //
 // Feature-Komponente: besitzt den Zustand DIESER Ansicht und leitet die
 // sichtbare Liste daraus ab.
@@ -17,10 +17,13 @@
 // hier nur noch für die Hinweiszeile und die Zustandssonde gebraucht – die
 // Liste und die Karten holen sie sich selbst.
 //
-// Exercise 6: drei weitere Sonden, alle nur im Entwicklungsmodus.
-// RenderPurityProbe (Demo 1) führt Seiteneffekte im Render vor,
-// EffectDepsProbe (Demo 2) die Formen der Abhängigkeitsliste,
-// CleanupProbe (Demo 3) einen Effect mit und ohne Aufräumfunktion.
+// Exercise 6: drei Sonden, alle nur im Entwicklungsmodus. RenderPurityProbe
+// (Demo 1) führt Seiteneffekte im Render vor, EffectDepsProbe (Demo 2) die
+// Formen der Abhängigkeitsliste, CleanupProbe (Demo 3) einen Effect mit und
+// ohne Aufräumfunktion.
+//
+// Exercise 6, Demo 6: Lade- und Fehlerzustand liegen in AppShell, hier
+// bleiben die beiden Leerzustände - siehe hasNoData / hasNoMatches.
 //
 // Zwei der drei migrierten Handler (Demo 1) liegen hier:
 //   - onChange am Suchfeld  (handleFilterChange)
@@ -39,6 +42,7 @@ import { RenderPurityProbe } from "./components/RenderPurityProbe.js";
 import { EffectDepsProbe } from "./components/EffectDepsProbe.js";
 import { CleanupProbe } from "./components/CleanupProbe.js";
 import { EvidenceDetail } from "./components/EvidenceDetail.js";
+import { EmptyState } from "../../shared/components/AsyncState.js";
 import { isEvidenceSortOrder, sortEvidence } from "./evidenceSort.js";
 import {
   INITIAL_FILTERS,
@@ -50,7 +54,7 @@ import type { FilterField } from "./evidenceFilters.js";
 import type { EvidenceId } from "../../../types.js";
 
 export function EvidencePage() {
-  const { status, evidence, people } = useCaseData();
+  const { evidence, people } = useCaseData();
 
   // Zwei Transportwege nebeneinander: Lesezeichen über Context,
   // Notizen über den Outlet-Context von AppShell (Demo 8).
@@ -86,14 +90,6 @@ export function EvidencePage() {
     setSelectedId((current) => (current === evidenceId ? null : evidenceId));
   }
 
-  if (status === "loading") {
-    return <p className="stub-note">Loading evidence&hellip;</p>;
-  }
-
-  if (status === "error") {
-    return <p className="stub-note">Falldaten konnten nicht geladen werden.</p>;
-  }
-
   // ABGELEITETE WERTE (Demo 4): die sichtbare Liste ist KEIN Zustand. Sie
   // entsteht bei jedem Rendern neu aus evidence + filters.
   //
@@ -103,6 +99,19 @@ export function EvidencePage() {
   const filtered = filterEvidence(evidence, filters, people);
   const visibleEvidence = sortEvidence(filtered, filters.sortOrder);
   const activeCount = activeFilterCount(filters);
+
+  // Exercise 6, Demo 6: ZWEI verschiedene Arten von "leer", die bisher beide
+  // dazu geführt hätten, dass einfach nichts dasteht.
+  //
+  //   hasNoData       Der Server hat geantwortet, aber die Fallakte enthält
+  //                   gar keine Beweisstücke (?empty=1 im Backend).
+  //   hasNoMatches    Es gibt Beweisstücke, aber kein einziges passt zu den
+  //                   gesetzten Filtern.
+  //
+  // Der Unterschied ist für den Benutzer wesentlich: im ersten Fall kann er
+  // nichts tun, im zweiten muss er nur den Filter löschen.
+  const hasNoData = evidence.length === 0;
+  const hasNoMatches = !hasNoData && visibleEvidence.length === 0;
 
   const firstEvidence = evidence[0];
   // Abgeleitet, kein Zustand: aus der Id das Beweisstück suchen.
@@ -158,7 +167,31 @@ export function EvidencePage() {
         />
       )}
 
-      <EvidenceList items={visibleEvidence} onSelect={handleSelect} />
+      {hasNoData && (
+        <EmptyState
+          title="Keine Beweisstücke in der Fallakte"
+          hint="Der Server hat erfolgreich geantwortet, die Liste ist aber leer. Das ist kein Fehler - es gibt schlicht nichts zu zeigen."
+        />
+      )}
+
+      {hasNoMatches && (
+        <EmptyState
+          title="Kein Treffer"
+          hint={`Keines der ${String(evidence.length)} Beweisstücke passt zu den gesetzten Filtern.`}
+        >
+          <button
+            type="button"
+            className="btn btn-secondary btn-small"
+            onClick={handleClearFilters}
+          >
+            Filter zurücksetzen
+          </button>
+        </EmptyState>
+      )}
+
+      {!hasNoData && !hasNoMatches && (
+        <EvidenceList items={visibleEvidence} onSelect={handleSelect} />
+      )}
     </section>
   );
 }

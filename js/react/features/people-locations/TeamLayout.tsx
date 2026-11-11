@@ -1,12 +1,14 @@
 // Layout-Route für /team (Exercise 4, Demo 8).
 //
-// Zuständig für: Datenquelle, Lade- und Fehlerzustand, Überschrift und
-// Tab-Leiste. Welches Gitter darunter erscheint, entscheidet die Kindroute
-// über <Outlet />.
+// Zuständig für: Datenquelle, Überschrift und Tab-Leiste. Welches Gitter
+// darunter erscheint, entscheidet die Kindroute über <Outlet />.
 //
-// Die Daten werden hier EINMAL geladen und per Outlet-Context an die
+// Die Daten werden hier EINMAL gelesen und per Outlet-Context an die
 // Kindroute weitergegeben. Beim Tabwechsel bleibt die Layout-Route montiert,
 // es wird also nicht neu geladen.
+//
+// Exercise 6, Demo 6: Lade- und Fehlerzustand lagen früher hier. Sie liegen
+// jetzt einmal in AppShell, weil alle fünf Ansichten dieselben Daten lesen.
 
 import { Outlet, useOutletContext } from "react-router";
 
@@ -26,15 +28,7 @@ export function useTeamContext(): TeamContext {
 }
 
 export function TeamLayout() {
-  const { status, people, locations, evidence } = useCaseData();
-
-  if (status === "loading") {
-    return <p className="stub-note">Loading case file&hellip;</p>;
-  }
-
-  if (status === "error") {
-    return <p className="stub-note">Falldaten konnten nicht geladen werden.</p>;
-  }
+  const { people, locations, evidence } = useCaseData();
 
   const context: TeamContext = { people, locations, evidence };
 

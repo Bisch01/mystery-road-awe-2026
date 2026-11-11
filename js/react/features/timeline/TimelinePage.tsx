@@ -7,6 +7,8 @@
 // Kein useState für den Filter: der Zustand steht in der URL. Die Komponente
 // liest ihn bei jedem Rendern neu, es gibt also keine zweite Kopie, die
 // auseinanderlaufen könnte.
+//
+// Exercise 6, Demo 6: Lade- und Fehlerzustand liegen jetzt in AppShell.
 
 import { Link, useSearchParams } from "react-router";
 
@@ -21,15 +23,7 @@ export function TimelinePage() {
   const [searchParams] = useSearchParams();
   const personParam = searchParams.get(PARAM_PERSON) ?? "";
 
-  const { status, timeline, locations, people } = useCaseData();
-
-  if (status === "loading") {
-    return <p className="stub-note">Loading case file&hellip;</p>;
-  }
-
-  if (status === "error") {
-    return <p className="stub-note">Falldaten konnten nicht geladen werden.</p>;
-  }
+  const { timeline, locations, people } = useCaseData();
 
   // Unbekannte Kennung: der Filter wird verworfen statt eine leere Liste zu
   // zeigen. Anders als bei /team/people/:personId ist ?person keine Identität,

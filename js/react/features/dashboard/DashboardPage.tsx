@@ -3,6 +3,10 @@
 //
 // Feature-Komponente im Sinne von Kap. 16.3: kennt die Datenquelle, berechnet
 // die abgeleiteten Werte und reicht reine Werte an die Darstellung weiter.
+//
+// Exercise 6, Demo 6: die Abfragen auf "loading" und "error" sind entfallen.
+// Sie liegen jetzt einmal in AppShell, und useCaseData() liefert hier nur
+// noch fertige Daten.
 
 import { useCaseData } from "../../shared/data/useCaseData.js";
 import { useBookmarks } from "../../shared/data/BookmarkContext.js";
@@ -13,20 +17,12 @@ import { RecentEvidenceList } from "./components/RecentEvidenceList.js";
 import { RecentTimelineList } from "./components/RecentTimelineList.js";
 
 export function DashboardPage() {
-  const { status, caseData, evidence, people, locations, timeline } = useCaseData();
+  const { caseData, evidence, people, locations, timeline } = useCaseData();
 
   // Demo 5: keine eigene Kopie mehr – vorher stand hier ein eigenes useState
   // mit readBookmarks() als Startwert, also eine dritte Kopie derselben
   // Tatsache. Demo 8: der Wert kommt jetzt aus dem Bookmark-Context.
   const { bookmarkIds } = useBookmarks();
-
-  if (status === "loading") {
-    return <p className="stub-note">Loading case file&hellip;</p>;
-  }
-
-  if (status === "error") {
-    return <p className="stub-note">Falldaten konnten nicht geladen werden.</p>;
-  }
 
   // ABGELEITETE WERTE (Skript Kap. 17.5: nicht speichern, was sich berechnen
   // lässt). Sie entstehen bei jedem Render neu aus evidence bzw. bookmarkIds –

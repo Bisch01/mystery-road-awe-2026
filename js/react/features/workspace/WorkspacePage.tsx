@@ -7,6 +7,8 @@
 //
 // Demo 8: die Lesezeichen kommen jetzt aus dem Bookmark-Context, die Notizen
 // weiter aus dem Outlet-Context von AppShell. Beide Wege nebeneinander.
+//
+// Exercise 6, Demo 6: Lade- und Fehlerzustand liegen jetzt in AppShell.
 
 import { useCaseData } from "../../shared/data/useCaseData.js";
 import { useAppOutlet } from "../../app/AppShell.js";
@@ -15,20 +17,12 @@ import { NotesPanel } from "./components/NotesPanel.js";
 import { HypothesisForm } from "./components/HypothesisForm.js";
 
 export function WorkspacePage() {
-  const { status, evidence, people } = useCaseData();
+  const { evidence, people } = useCaseData();
 
   // Demo 8: Diese Seite braucht die Lesezeichen gar nicht mehr. BookmarksPanel
   // holt sie sich selbst aus dem Context – zwei Props weniger, und die
   // Zwischenebene weiß nichts mehr davon.
   const { notes } = useAppOutlet();
-
-  if (status === "loading") {
-    return <p className="stub-note">Loading case file&hellip;</p>;
-  }
-
-  if (status === "error") {
-    return <p className="stub-note">Falldaten konnten nicht geladen werden.</p>;
-  }
 
   return (
     <section>

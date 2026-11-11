@@ -75,17 +75,22 @@ One `GET` per resource, each returning exactly the same JSON as the correspondin
 
 There are no write endpoints. Bookmarks, notes, and the hypothesis draft stay in `localStorage`.
 
-### Simulating slow and failing responses
+### Simulating slow, failing, and empty responses
 
-A static file is either instant or a 404, which makes loading indicators, error states, and
-request races impossible to demonstrate. Two switches fix that:
+A static file is either instant or a 404, which makes loading indicators, error states, empty
+states, and request races impossible to demonstrate. Three switches fix that:
 
-| Switch           | Effect                         | Example                         |
-| ---------------- | ------------------------------ | ------------------------------- |
-| `?delay=<ms>`    | delays the response (max 30 s) | `/api/evidence?delay=3000`      |
-| `?fail=1`        | responds `500` instead of data | `/api/evidence?fail=1`          |
-| `API_DELAY=<ms>` | same, for every request        | `API_DELAY=2000 npm run server` |
-| `API_FAIL=1`     | same, for every request        | `API_FAIL=1 npm run server`     |
+| Switch           | Effect                            | Example                         |
+| ---------------- | --------------------------------- | ------------------------------- |
+| `?delay=<ms>`    | delays the response (max 30 s)    | `/api/evidence?delay=3000`      |
+| `?fail=1`        | responds `500` instead of data    | `/api/evidence?fail=1`          |
+| `?empty=1`       | responds `200` with an empty list | `/api/evidence?empty=1`         |
+| `API_DELAY=<ms>` | same, for every request           | `API_DELAY=2000 npm run server` |
+| `API_FAIL=1`     | same, for every request           | `API_FAIL=1 npm run server`     |
+| `API_EMPTY=1`    | same, for every request           | `API_EMPTY=1 npm run server`    |
+
+`?empty=1` only affects the list resources. `/api/case` is a single object, so there is no
+meaningful empty version of it and the switch is ignored there.
 
 `PORT` overrides the default port 3001.
 

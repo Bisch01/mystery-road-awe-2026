@@ -8,12 +8,14 @@
 // als Lese-Endpunkte. Keine Schreib-Endpunkte, keine Datenbank: Lesezeichen,
 // Notizen und der Hypothesen-Entwurf bleiben im Local Storage.
 //
-// Dazu zwei Schalter, die eine statische Datei nicht bieten kann:
+// Dazu drei Schalter, die eine statische Datei nicht bieten kann:
 //   ?delay=2000  verzögert die Antwort um 2000 ms
 //   ?fail=1      antwortet mit 500 statt mit Daten
-// Beides geht auch global über die Umgebungsvariablen API_DELAY und
-// API_FAIL. Ohne diese Schalter wären Ladeanzeige, Fehlerzustand und
-// Wettlauf zweier Anfragen (Demos 6 und 7) nicht vorführbar.
+//   ?empty=1     antwortet mit einer leeren Liste statt mit Daten
+// Alle drei gehen auch global über die Umgebungsvariablen API_DELAY,
+// API_FAIL und API_EMPTY. Ohne diese Schalter wären Ladeanzeige,
+// Fehlerzustand, Leerzustand (Demo 6) und der Wettlauf zweier Anfragen
+// (Demo 7) nicht vorführbar: eine Datei ist entweder sofort da oder 404.
 
 import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -29,6 +31,15 @@ const DATA_DIR = join(HERE, "..", "public", "data");
 
 // Eine Ressource je JSON-Datei. Der Name ist zugleich der Dateiname.
 const RESOURCES = ["case", "evidence", "people", "locations", "timeline"];
+
+// case ist ein einzelnes Objekt, alle anderen sind Listen. Nur Listen haben
+// eine sinnvolle leere Fassung - deshalb wirkt ?empty=1 nicht auf /api/case.
+const COLLECTIONS = RESOURCES.filter((name) => name !== "case");
+
+/** Prüft einen Schalter aus Query-Parameter oder Umgebungsvariable. */
+function isOn(value) {
+  return value !== undefined && value !== "0" && value !== "false";
+}
 
 const app = express();
 
@@ -48,7 +59,7 @@ app.use(async (req, res, next) => {
   }
 
   const fail = req.query.fail ?? process.env.API_FAIL;
-  if (fail !== undefined && fail !== "0" && fail !== "false") {
+  if (isOn(fail)) {
     console.log(`[api] ${req.method} ${req.originalUrl} - antworte mit 500`);
     res.status(500).json({ error: "Simulierter Serverfehler", path: req.path });
     return;
@@ -65,8 +76,17 @@ app.get("/api/health", (_req, res) => {
 // Ein GET je Ressource. Die Antwort ist der unveränderte Dateiinhalt,
 // damit die Form exakt der bisherigen Datei entspricht.
 for (const name of RESOURCES) {
-  app.get(`/api/${name}`, async (_req, res, next) => {
+  app.get(`/api/${name}`, async (req, res, next) => {
     try {
+      // Leere Liste auf Abruf: eine erfolgreiche Antwort (200) ohne Inhalt.
+      // Genau der Fall, den Demo 6 vom Ladezustand unterscheiden soll.
+      const empty = req.query.empty ?? process.env.API_EMPTY;
+      if (isOn(empty) && COLLECTIONS.includes(name)) {
+        console.log(`[api] ${req.method} ${req.originalUrl} - antworte mit leerer Liste`);
+        res.type("application/json").send("[]");
+        return;
+      }
+
       const raw = await readFile(join(DATA_DIR, `${name}.json`), "utf8");
       res.type("application/json").send(raw);
     } catch (err) {
@@ -87,5 +107,5 @@ app.use((err, _req, res, _next) => {
 app.listen(PORT, () => {
   console.log(`[api] läuft auf http://localhost:${PORT}/api  (nur Entwicklung)`);
   console.log(`[api] Ressourcen: ${RESOURCES.map((r) => `/api/${r}`).join(", ")}`);
-  console.log(`[api] Verzögerung: ?delay=2000   Fehler: ?fail=1`);
+  console.log(`[api] Verzögerung: ?delay=2000   Fehler: ?fail=1   Leer: ?empty=1`);
 });

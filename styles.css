@@ -1083,3 +1083,75 @@ a.nav-btn {
 .cleanup-probe button {
   margin-top: 4px;
 }
+
+/* ---------------------------------------------------------------------
+   React-Variante, Exercise 6 Demo 6: Lade-, Fehler- und Leerzustand.
+   Drei verschiedene Lagen, drei verschiedene Erscheinungsbilder - vorher
+   waren alle drei ein <p class="stub-note">.
+   --------------------------------------------------------------------- */
+.async-state {
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin: 12px 0 20px;
+  border: 1px solid transparent;
+}
+
+.async-state strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.async-detail {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.async-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f4f6fa;
+  border-color: #d6dced;
+  color: var(--color-text-muted);
+}
+
+.async-error {
+  background: #fdecea;
+  border-color: #f2b8b2;
+}
+
+.async-error strong {
+  color: #b3261e;
+}
+
+.async-empty {
+  background: #f7f7f8;
+  border-color: #dddde2;
+}
+
+.async-empty strong {
+  color: var(--color-text-muted);
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #c3cbdd;
+  border-top-color: #3b6fd4;
+  border-radius: 50%;
+  animation: spinner-turn 0.8s linear infinite;
+}
+
+@keyframes spinner-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 3s;
+  }
+}
