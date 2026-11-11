@@ -28,6 +28,9 @@
 // geworden, die Fehlermeldung steht darin, und es gibt einen Ausweg
 // (reload). Siehe Kommentar bei CaseDataState.
 //
+// Exercise 6, Demo 7: Die Aufräumfunktion bricht die Anfragen jetzt wirklich
+// ab, statt ihr Ergebnis nur zu ignorieren. Siehe Kommentar im Effect.
+//
 // Die Datei heißt .tsx, weil sie JSX enthält (<CaseDataContext.Provider>).
 // Die Importe "./useCaseData.js" in den Seiten bleiben gleich: durch
 // moduleResolution "bundler" löst TypeScript "./useCaseData.js" auf
@@ -91,12 +94,21 @@ function toEvidence(raw: RawEvidence): Evidence {
  * res.json() würde den Fehlertext zu parsen versuchen. Ohne diese Prüfung
  * landet ein Serverfehler also still als kaputte Daten in der Oberfläche,
  * statt im Fehlerzustand.
+ *
+ * Demo 7: das Signal wird an fetch() durchgereicht. Ohne diesen Parameter
+ * hätte ein AbortController keine Wirkung - der Abbruch muss die EINZELNE
+ * Anfrage erreichen, nicht nur die Stelle, die auf sie wartet.
  */
-async function fetchJson<T>(resource: string): Promise<T> {
+async function fetchJson<T>(resource: string, signal: AbortSignal): Promise<T> {
   const url = resourceUrl(resource);
-  const res = await fetch(url);
+  const res = await fetch(url, { signal });
   if (!res.ok) throw new Error(`${url}: HTTP ${String(res.status)} ${res.statusText}`);
   return (await res.json()) as T;
+}
+
+/** Ein abgebrochener Aufruf ist kein Fehler, sondern ein geplantes Ende. */
+function isAbortError(err: unknown): boolean {
+  return err instanceof Error && err.name === "AbortError";
 }
 
 /** Die geladenen Falldaten. Existiert nur im Zustand "ready". */
@@ -142,21 +154,27 @@ function useCaseDataLoader(): CaseDataState {
   }
 
   useEffect(() => {
-    // StrictMode ruft Effects im Entwicklungsmodus doppelt auf. Das Flag
-    // verhindert, dass ein abgebrochener Durchlauf noch Zustand setzt.
-    let cancelled = false;
+    // Exercise 6, Demo 7: ein AbortController statt eines cancelled-Flags.
+    //
+    // Vorher stand hier "let cancelled = false", und die Aufräumfunktion
+    // setzte es auf true. Das hat nur das ERGEBNIS verworfen - die fünf
+    // Anfragen liefen trotzdem bis zum Ende. Im Entwicklungsmodus waren das
+    // wegen StrictMode zehn statt fünf, und bei langsamen Antworten dauerte
+    // das Laden doppelt so lange, weil der Browser pro Host nur sechs
+    // Verbindungen gleichzeitig offen hält.
+    //
+    // Jetzt bricht die Aufräumfunktion die Anfragen tatsächlich ab.
+    const controller = new AbortController();
 
     async function load(): Promise<void> {
       try {
         const [caseData, people, locations, rawEvidence, timeline] = await Promise.all([
-          fetchJson<CaseData>("case"),
-          fetchJson<Person[]>("people"),
-          fetchJson<Location[]>("locations"),
-          fetchJson<RawEvidence[]>("evidence"),
-          fetchJson<TimelineEvent[]>("timeline"),
+          fetchJson<CaseData>("case", controller.signal),
+          fetchJson<Person[]>("people", controller.signal),
+          fetchJson<Location[]>("locations", controller.signal),
+          fetchJson<RawEvidence[]>("evidence", controller.signal),
+          fetchJson<TimelineEvent[]>("timeline", controller.signal),
         ]);
-
-        if (cancelled) return;
 
         setState({
           status: "ready",
@@ -169,8 +187,13 @@ function useCaseDataLoader(): CaseDataState {
           },
         });
       } catch (err) {
+        // Demo 7: ein Abbruch ist KEIN Fehlerzustand. Er bedeutet, dass
+        // jemand dieses Ergebnis absichtlich nicht mehr wollte. Wer das
+        // nicht abfängt, zeigt beim Seitenwechsel eine rote Fehlermeldung
+        // für eine Anfrage, die er selbst gestoppt hat.
+        if (isAbortError(err)) return;
+
         console.error("Falldaten konnten nicht geladen werden", err);
-        if (cancelled) return;
 
         // Demo 6: die Meldung des Fehlers wandert IN den Zustand. Vorher
         // stand sie nur in der Konsole, und die Oberfläche zeigte einen
@@ -185,8 +208,11 @@ function useCaseDataLoader(): CaseDataState {
 
     void load();
 
+    // Demo 7: Die Aufräumfunktion IST der Abbruch. Es gibt keine zweite
+    // Stelle, die abbricht - React ruft sie beim Aushängen und vor jedem
+    // erneuten Lauf des Effects auf, und genau dort gehört abort() hin.
     return () => {
-      cancelled = true;
+      controller.abort();
     };
     // reloadToken ist die einzige Abhängigkeit: erhöhen heißt neu laden.
   }, [reloadToken]);
