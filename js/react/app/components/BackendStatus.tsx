@@ -1,7 +1,7 @@
 // Erreichbarkeit des Entwicklungs-Backends (Exercise 6, Demo 8).
 //
-// Die ZWEITE Stelle, die useFetch benutzt - und absichtlich eine ganz
-// andere Art von Aufruf als der Lader der Falldaten:
+// Die ZWEITE Stelle, die useAsyncResource benutzt - und absichtlich eine
+// ganz andere Art von Aufruf als der Lader der Falldaten:
 //   - eine einzelne Ressource statt fünf
 //   - eine winzige Antwort statt mehrerer Kilobyte
 //   - ein Fehler ist hier kein Grund, die Anwendung anzuhalten, sondern
@@ -13,16 +13,18 @@
 //
 // Nur im Entwicklungsmodus gerendert (siehe AppFooter): im Produktionsbuild
 // gibt es kein Backend, das man anzeigen könnte.
+//
+// Exercise 6, Demo 9: die Adresse /api/health ist aus dieser Datei
+// verschwunden. Sie steht jetzt in shared/api/caseApi - diese Komponente
+// macht nur noch Darstellung.
 
-import { useFetch } from "../../shared/hooks/useFetch.js";
-
-interface Health {
-  ok: boolean;
-  resources: string[];
-}
+import { useAsyncResource } from "../../shared/hooks/useAsyncResource.js";
+import { getHealth } from "../../shared/api/caseApi.js";
 
 export function BackendStatus() {
-  const health = useFetch<Health>("/api/health");
+  // Demo 9: die Adresse steht nicht mehr hier, sondern in shared/api.
+  // Diese Komponente weiß nur noch, dass es getHealth gibt.
+  const health = useAsyncResource(getHealth);
 
   if (health.status === "loading") {
     return (

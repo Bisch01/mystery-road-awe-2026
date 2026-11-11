@@ -2,8 +2,7 @@
 //
 // Lädt dieselben fünf Datensätze wie die Vanilla-App - seit Exercise 6,
 // Demo 5 im Entwicklungsmodus aus dem Node-Backend, im Produktionsbuild
-// weiterhin aus public/data/. Bewusst ein eigener Lader statt api.ts: dort
-// ist das Laden fest mit den render*-Funktionen verdrahtet.
+// weiterhin aus public/data/.
 //
 // Exercise 5, Demo 4: die Lesezeichen liegen NICHT mehr in diesem Zustand.
 // Sie wurden dort einmal beim Laden abgelegt (bookmarks: readBookmarks()) und
@@ -21,19 +20,17 @@
 // Exercise 6, Demo 5: Die Quelle hat gewechselt. Statt der statischen
 // Dateien unter public/data/ fragt der Lader jetzt das Node-Backend aus
 // Demo 4. Dass dafür genau EINE Datei anzufassen war, ist das Ergebnis von
-// Demo 9 aus Exercise 5 - vorher hätte dieselbe Änderung in fünf Seiten
-// gleichzeitig passieren müssen.
+// Demo 9 aus Exercise 5.
 //
 // Exercise 6, Demo 6: Der Zustand ist ein unterscheidender Vereinigungstyp
-// geworden, die Fehlermeldung steht darin, und es gibt einen Ausweg
-// (reload). Siehe Kommentar bei CaseDataState.
+// geworden, die Fehlermeldung steht darin, und es gibt einen Ausweg (reload).
 //
 // Exercise 6, Demo 7: Die Aufräumfunktion bricht die Anfragen wirklich ab,
 // statt ihr Ergebnis nur zu ignorieren.
 //
-// Exercise 6, Demo 8: Der handgeschriebene Effect ist komplett entfallen.
-// Was von ihm übrig ist, steht in shared/hooks/useFetch und wird hier
-// fünfmal aufgerufen.
+// Exercise 6, Demo 8 und 9: Laden, Fehlerbehandlung und Abbruch stehen in
+// shared/hooks/useAsyncResource, die Adressen in shared/api. Diese Datei
+// weiß nur noch, WELCHE fünf Ressourcen die Fallakte ausmachen.
 //
 // Die Datei heißt .tsx, weil sie JSX enthält (<CaseDataContext.Provider>).
 // Die Importe "./useCaseData.js" in den Seiten bleiben gleich: durch
@@ -43,54 +40,10 @@
 import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
 
-import { useFetch } from "../hooks/useFetch.js";
+import { useAsyncResource } from "../hooks/useAsyncResource.js";
+import { getCase, getEvidence, getLocations, getPeople, getTimeline } from "../api/caseApi.js";
 
-import type {
-  CaseData,
-  Evidence,
-  EvidenceRelevance,
-  EvidenceStatus,
-  Location,
-  Person,
-  TimelineEvent,
-} from "../../../types.js";
-
-// Exercise 6, Demo 5: die Falldaten kommen jetzt aus dem Node-Backend
-// (server/server.js), nicht mehr aus den statischen Dateien.
-//
-// Zwei Quellen, weil das Backend absichtlich nur lokal läuft:
-//   Entwicklung  ->  /api/evidence            (Vite leitet an Port 3001 weiter)
-//   Produktion   ->  <base>/data/evidence.json  (GitHub Pages, kein Backend)
-//
-// import.meta.env.DEV entscheidet; Vite ersetzt den Wert beim Bauen fest,
-// der jeweils andere Zweig fällt aus dem Bundle heraus.
-const API_BASE = "/api";
-const FILE_BASE = `${import.meta.env.BASE_URL}data`;
-
-/** Ressourcenname -> Adresse. "evidence" wird zu /api/evidence bzw. .../data/evidence.json. */
-function resourceUrl(resource: string): string {
-  return import.meta.env.DEV ? `${API_BASE}/${resource}` : `${FILE_BASE}/${resource}.json`;
-}
-
-// evidence.json hält sich bei status und relevance nicht an die Union-Typen
-// ("Reviewed" statt "reviewed"). Dieselbe Normalisierung wie in api.ts.
-type RawEvidence = Omit<Evidence, "status" | "relevance"> & {
-  status: string;
-  relevance: string;
-};
-
-const EVIDENCE_STATUSES: readonly EvidenceStatus[] = ["unreviewed", "reviewed", "flagged"];
-const EVIDENCE_RELEVANCES: readonly EvidenceRelevance[] = ["unknown", "relevant", "irrelevant"];
-
-function toEvidence(raw: RawEvidence): Evidence {
-  const status = raw.status.toLowerCase();
-  const relevance = raw.relevance.toLowerCase();
-  return {
-    ...raw,
-    status: EVIDENCE_STATUSES.find((known) => known === status) ?? "unreviewed",
-    relevance: EVIDENCE_RELEVANCES.find((known) => known === relevance) ?? "unknown",
-  };
-}
+import type { CaseData, Evidence, Location, Person, TimelineEvent } from "../../../types.js";
 
 /** Die geladenen Falldaten. Existiert nur im Zustand "ready". */
 export interface CaseDataPayload {
@@ -121,25 +74,22 @@ export type CaseDataState =
   | { status: "error"; message: string; reload: () => void }
   | { status: "ready"; data: CaseDataPayload };
 
-// Exercise 6, Demo 8: Der handgeschriebene Effect ist weg. Fünfmal
-// derselbe Hook, einmal je Ressource - Laden, Fehlerbehandlung und Abbruch
-// stehen jetzt genau einmal in shared/hooks/useFetch.
+// Exercise 6, Demo 8 und 9: Hier steht kein fetch, keine Adresse und kein
+// Effect mehr - nur noch, WELCHE Ressourcen die Fallakte ausmachen und wie
+// ihre fünf Ergebnisse zu einem Zustand werden.
 //
-// Das ist die eine der beiden Stellen, die den Hook benutzen. Die zweite ist
-// app/components/BackendStatus.
-//
-// Was hier NICHT in den Hook wandern konnte und bewusst hier bleibt:
-//   - das Zusammenführen der fünf Ergebnisse zu einem Zustand
-//   - toEvidence(), die Normalisierung der Evidence-Daten
-// Beides kennt die Fachlichkeit dieser Anwendung. useFetch kennt nur JSON.
+// Die Ladefunktionen kommen aus shared/api/caseApi, die Ablauflogik aus
+// shared/hooks/useAsyncResource. Dass getCase & Co. auf Modulebene stehen,
+// ist Voraussetzung: dadurch bleibt ihre Identität über Renders hinweg
+// gleich und der Effect im Hook läuft nur einmal.
 function useCaseDataLoader(): CaseDataState {
-  const caseFile = useFetch<CaseData>(resourceUrl("case"));
-  const people = useFetch<Person[]>(resourceUrl("people"));
-  const locations = useFetch<Location[]>(resourceUrl("locations"));
-  const rawEvidence = useFetch<RawEvidence[]>(resourceUrl("evidence"));
-  const timeline = useFetch<TimelineEvent[]>(resourceUrl("timeline"));
+  const caseFile = useAsyncResource(getCase);
+  const people = useAsyncResource(getPeople);
+  const locations = useAsyncResource(getLocations);
+  const evidence = useAsyncResource(getEvidence);
+  const timeline = useAsyncResource(getTimeline);
 
-  const parts = [caseFile, people, locations, rawEvidence, timeline];
+  const parts = [caseFile, people, locations, evidence, timeline];
 
   /** Ein Knopfdruck startet alle fünf Anfragen neu. */
   function reloadAll(): void {
@@ -158,7 +108,7 @@ function useCaseDataLoader(): CaseDataState {
     caseFile.status !== "ready" ||
     people.status !== "ready" ||
     locations.status !== "ready" ||
-    rawEvidence.status !== "ready" ||
+    evidence.status !== "ready" ||
     timeline.status !== "ready"
   ) {
     return { status: "loading" };
@@ -170,7 +120,7 @@ function useCaseDataLoader(): CaseDataState {
       caseData: caseFile.data,
       people: people.data,
       locations: locations.data,
-      evidence: rawEvidence.data.map(toEvidence),
+      evidence: evidence.data,
       timeline: timeline.data,
     },
   };

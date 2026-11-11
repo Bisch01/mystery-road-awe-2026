@@ -335,3 +335,47 @@ die Variable außerhalb von React lebt. Beides fällt im Alltag nicht auf — di
 Zahl sieht ja plausibel aus. Das ist der Kern: ein Seiteneffekt im Render
 "funktioniert scheinbar", liefert aber Werte, auf die man sich nicht verlassen
 kann.
+
+## Exercise 6, Demo 9: Drei Schichten für den Datenzugriff
+
+```
+Komponenten                      nur Darstellung, kein fetch, keine Adresse
+        ↑
+shared/hooks/useAsyncResource    Ablauf: lädt / Fehler / fertig, Abbruch, reload
+        ↑
+shared/api/caseApi               welche Endpunkte es gibt, welcher Typ zurückkommt
+shared/api/client                Adressen, fetch, HTTP-Status, Form der Antwort
+        ↑
+server/server.js                 GET /api/*
+```
+
+| Schicht                            | weiß von                                      | weiß NICHTS von             |
+| ---------------------------------- | --------------------------------------------- | --------------------------- |
+| `shared/api/client.ts`             | Adressen, `fetch`, HTTP-Status, `?delay`      | React, Zustand, Darstellung |
+| `shared/api/caseApi.ts`            | welche Ressourcen es gibt, ihre Typen         | React, Zustand, Darstellung |
+| `shared/hooks/useAsyncResource.ts` | Lade-/Fehlerzustand, Abbruch, reload          | HTTP, Adressen              |
+| `shared/data/useCaseData.tsx`      | welche fünf Ressourcen die Fallakte ausmachen | fetch, Adressen             |
+| Komponenten                        | nur, was sie anzeigen                         | alles darunter              |
+
+**`fetch` kommt in der gesamten React-Variante genau einmal vor:** in
+`shared/api/client.ts`. Geprüft mit
+
+```bash
+grep -rn "fetch(" js/react
+```
+
+Alle übrigen Treffer sind Kommentare.
+
+**Was das praktisch bedeutet:** Ändert das Backend morgen seine Adressen oder
+die Form seiner Antworten, ist `shared/api/` die einzige Stelle, die angefasst
+wird — eine Datei für die Adressen, eine für die Typen. Keine Komponente, kein
+Hook.
+
+**Das Gegenargument, ehrlich:** Für eine Anwendung dieser Größe sind drei
+Schichten mehr Struktur, als nötig wäre. Fünf Endpunkte, ein Datenmodell, ein
+Entwickler — ein einziges `useCaseData.tsx` mit allem darin wäre kürzer und
+schneller zu lesen. Gerechtfertigt ist die Trennung hier aus zwei Gründen:
+die Zugriffsschicht wird nachweislich von zwei unabhängigen Stellen benutzt
+(Falldaten und Backend-Anzeige), und der Wechsel der Datenquelle in Demo 5 hat
+gezeigt, wie teuer verstreutes Wissen über Adressen wird — damals musste genau
+deshalb nur eine Datei geändert werden.

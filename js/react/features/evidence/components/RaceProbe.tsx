@@ -19,11 +19,14 @@
 // Effects die alte Anfrage ab, sobald eine neue startet. Dann kann die
 // veraltete Antwort gar nicht mehr ankommen.
 //
-// Die Zeile "Angezeigt" wird rot und mit VERALTET markiert, sobald sie nicht
-// mehr zu "Angefordert" passt - ohne diese Markierung wäre der Fehler auf
-// dem Bildschirm kaum zu bemerken.
+// Exercise 6, Demo 9: der Aufruf geht nicht mehr direkt an fetch(), sondern
+// durch die Zugriffsschicht. Dadurch gibt es in der gesamten React-Variante
+// nur noch eine einzige Stelle mit fetch().
 
 import { useEffect, useState } from "react";
+
+import { getSlowResource } from "../../../shared/api/caseApi.js";
+import { isAbortError } from "../../../shared/api/client.js";
 
 type RaceResource = "people" | "locations";
 
@@ -69,13 +72,17 @@ export function RaceProbe() {
   useEffect(() => {
     const controller = new AbortController();
     const delay = DELAYS[resource];
-    const url = `/api/${resource}?delay=${String(delay)}`;
 
     setPending((current) => current + 1);
     note(`start    ${resource} (${String(delay)} ms)`);
 
-    fetch(url, useAbort ? { signal: controller.signal } : undefined)
-      .then((res) => res.json() as Promise<unknown[]>)
+    // Demo 9: auch diese Sonde ruft kein fetch() mehr selbst auf. Der
+    // Aufruf geht durch die Zugriffsschicht, die auch den ?delay-Schalter
+    // des Backends kennt.
+    getSlowResource(resource, {
+      delayMs: delay,
+      signal: useAbort ? controller.signal : undefined,
+    })
       .then((data) => {
         setPending((current) => current - 1);
         note(`fertig   ${resource} -> ${String(data.length)} Einträge, wird angezeigt`);
@@ -83,7 +90,7 @@ export function RaceProbe() {
       })
       .catch((err: unknown) => {
         setPending((current) => current - 1);
-        if (err instanceof Error && err.name === "AbortError") {
+        if (isAbortError(err)) {
           note(`abgebrochen ${resource}`);
           return;
         }
